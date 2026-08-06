@@ -1,6 +1,9 @@
 
 
 
+import User from "../models/user.model.js";
+import { genToken } from "../configs/token.js";
+
 export const googleAuth = async (req, res) => {
     try {
         const { name, email } = req.body
@@ -11,7 +14,7 @@ export const googleAuth = async (req, res) => {
                 message: "Name and email are required"
             })
         }
-        let user = await User.findone({ email })
+        let user = await User.findOne({ email })
         if (!user) {
             user = await User.create({
                 name,
@@ -19,12 +22,12 @@ export const googleAuth = async (req, res) => {
             })
         }
 
-        const token = genToken(user._id)
+        const token = await genToken(user._id)
         res.cookie("token", token, {
             httpOnly: true,
             secure: false,
             sameSite: "strict",
-            maxAge: 7 * 24 * 60860 * 1000
+            maxAge: 7 * 24 * 60 * 60 * 1000
         })
         return res.status(200).json(user)
     } catch (error) {

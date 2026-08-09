@@ -1,3 +1,9 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { signInWithPopup } from "firebase/auth";
+import { auth, provider } from "../../utils/firebase";
+import { serverUrl } from "../App";
+import axios from "axios";
 import "./Login.css";
 
 const GoogleIcon = () => (
@@ -31,6 +37,40 @@ const MicGlyph = () => (
 );
 
 export default function Login() {
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        setErrorMessage("");
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            const name = user.displayName || user.email;
+            const email = user.email;
+
+            const res = await axios.post(
+                `${serverUrl}/api/auth/google`,
+                { name, email },
+                { withCredentials: true }
+            );
+
+            console.log(res.data);
+
+            if (res.status === 200) {
+                navigate("/");
+            }
+        } catch (error) {
+            console.error("Google auth error:", error);
+            setErrorMessage(
+                error?.response?.data?.message || error?.message || "Failed to sign in with Google."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="login-screen">
             <div className="login-glow" aria-hidden="true" />
@@ -48,11 +88,27 @@ export default function Login() {
             </div>
 
             <div className="login-actions">
-                <button type="button" className="btn-google">
+                {errorMessage && (
+                    <div style={{ color: "#ff8a80", fontSize: "13px", textAlign: "center", marginBottom: "8px" }}>
+                        {errorMessage}
+                    </div>
+                )}
+                <button
+                    onClick={handleGoogleLogin}
+                    type="button"
+                    className="btn-google"
+                    disabled={loading}
+                >
                     <GoogleIcon />
-                    Continue with Google
+                    {loading ? "Signing in..." : "Continue with Google"}
                 </button>
-                <button type="button" className="btn-email">Continue with email</button>
+                <button
+                    type="button"
+                    className="btn-email"
+                    disabled={loading}
+                >
+                    Continue with email
+                </button>
                 <p className="login-legal">
                     By continuing you agree to Vocentra's <a href="#terms">Terms</a> and <a href="#privacy">Privacy Policy</a>.
                 </p>

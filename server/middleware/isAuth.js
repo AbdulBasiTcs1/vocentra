@@ -2,23 +2,21 @@ import jwt from "jsonwebtoken";
 
 export const isAuth = async (req, res, next) => {
     try {
-        const token = req.cookies.token
-        if(!token){
-            return res.status(401).json({message: "Unauthorized (User doesn't have token)."})
+        const token = req.cookies.token;
+        if (!token) {
+            return res.status(401).json({ success: false, message: "Unauthorized (No token provided)." });
         }
 
-        const verifyToken = jwt.verify(token, process.env.JWT_SECRET)
-        console.log(verifyToken)
-
-        if(!verifyToken){
-            return res.status(401).json({message: "Unauthorized (Token is not valid)."})
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized (Invalid token)." });
         }
-        req.user = verifyToken
-        console.log("success")
-        next()
+
+        req.user = decoded;
+        req.userId = decoded.userId;
+        next();
     } catch (error) {
-        console.error("Error in isAuth middleware:", error);
-        res.status(401).json({ message: "Unauthorized" });
+        console.error("Error in isAuth middleware:", error.message);
+        return res.status(401).json({ success: false, message: "Unauthorized (Token verification failed)." });
     }
-}
-
+};

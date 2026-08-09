@@ -36,7 +36,7 @@ const MicGlyph = () => (
     </svg>
 );
 
-export default function Login() {
+export default function Login({ setUser }) {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -59,6 +59,9 @@ export default function Login() {
             console.log(res.data);
 
             if (res.status === 200) {
+                if (setUser) {
+                    setUser(res.data.user || res.data);
+                }
                 navigate("/");
             }
         } catch (error) {

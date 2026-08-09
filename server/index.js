@@ -2,7 +2,8 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./configs/connectDB.js";
 import cookieParser from "cookie-parser";
-import AuthRouter from "./routes/auth.routes.js";
+import AuthRouter from "./routes/auth.route.js";
+import UserRouter from "./routes/user.route.js";
 import cors from "cors";
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", AuthRouter);
+app.use("/api/user", UserRouter);
 
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);

@@ -1,8 +1,8 @@
 
-function Home() {
+function Home({ user }) {
     return (
         <div>
-            <h1>Home</h1>
+            {user?.name}
         </div>
     );
 }

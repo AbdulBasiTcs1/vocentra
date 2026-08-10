@@ -56,7 +56,7 @@ export default function Login({ setUser }) {
                 { withCredentials: true }
             );
 
-            console.log(res.data);
+            setUser(res.data);
 
             if (res.status === 200) {
                 if (setUser) {

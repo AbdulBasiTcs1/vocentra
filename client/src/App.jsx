@@ -20,7 +20,6 @@ function App() {
                 const response = await axios.get(`${serverUrl}/api/user/current-user`, {
                     withCredentials: true,
                 });
-                console.log("Current user:", response.data);
                 setUser(response.data);
             } catch (error) {
                 console.error("Error in checkUser:", error);

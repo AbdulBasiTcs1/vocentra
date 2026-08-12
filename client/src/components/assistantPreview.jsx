@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./AssistantPreview.css";
+import "./assistantPreview.css";
 
 const themes = {
     dark: {

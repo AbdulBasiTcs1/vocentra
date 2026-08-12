@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import AssistantPreview from "../components/assistantPreview";
-import Steps from "../components/steps";
+import AssistantPreview from "../components/assistantPreview.jsx";
+import Steps from "../components/steps.jsx";
 import "./Home.css";
-import Footer from "../components/Footer";
+import Footer from "../components/Footer.jsx";
+
 /* ---------------------------------- Icons ---------------------------------- */
 
 const WaveIcon = () => (

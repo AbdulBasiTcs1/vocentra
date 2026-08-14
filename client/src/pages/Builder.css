@@ -1,0 +1,558 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+    --p0: #E0E6E9;
+    --p1: #B0B8BC;
+    --p2: #8A9296;
+    --p3: #68757F;
+    --p4: #4A5C63;
+    --p5: #2E4348;
+    --p6: #1B2B2F;
+    --p7: #0C171B;
+    --p8: #000000;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ================================ SHELL ================================ */
+
+.builder-page {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: radial-gradient(70% 60% at 50% -5%, var(--p6) 0%, var(--p7) 30%, var(--p8) 75%);
+    font-family: 'Inter', sans-serif;
+    color: var(--p0);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ================================ FX (same as Home) ================================ */
+
+.builder-spotlight {
+    position: fixed;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(224, 230, 233, 0.045) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+    filter: blur(50px);
+}
+
+.builder-ambient {
+    position: fixed;
+    top: -15%;
+    left: 50%;
+    width: 1400px;
+    height: 700px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(224, 230, 233, 0.035) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.builder-ambient-bottom {
+    position: fixed;
+    bottom: -20%;
+    left: 30%;
+    width: 1000px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(27, 43, 47, 0.6) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ================================ MAIN ================================ */
+
+.builder-main {
+    position: relative;
+    z-index: 2;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 100px 24px 120px;
+}
+
+.builder-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ================================ STATUS ================================ */
+
+.builder-status {
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+}
+
+.builder-status--success {
+    background: rgba(16, 185, 129, 0.08);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.builder-status--error {
+    background: rgba(239, 68, 68, 0.06);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.12);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ================================ CARDS ================================ */
+
+.builder-card {
+    width: 100%;
+    border-radius: 24px;
+    border: 1px solid rgba(224, 230, 233, 0.1);
+    background: rgba(224, 230, 233, 0.025);
+    backdrop-filter: blur(18px);
+    padding: 32px;
+    transition: box-shadow 0.3s ease;
+}
+
+.builder-card:hover {
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+}
+
+.builder-card-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--p0);
+    margin-bottom: 24px;
+    letter-spacing: -0.01em;
+}
+
+.builder-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.builder-card-header .builder-card-title {
+    margin-bottom: 4px;
+}
+
+.builder-card-sub {
+    font-size: 13.5px;
+    color: var(--p2);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ================================ FIELDS ================================ */
+
+.builder-field {
+    margin-bottom: 18px;
+}
+
+.builder-field:last-child {
+    margin-bottom: 0;
+}
+
+.builder-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--p2);
+    margin-bottom: 8px;
+}
+
+.builder-field input,
+.builder-field textarea,
+.builder-page-add input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(224, 230, 233, 0.1);
+    background: rgba(12, 23, 27, 0.45);
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--p0);
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.builder-field input::placeholder,
+.builder-field textarea::placeholder,
+.builder-page-add input::placeholder {
+    color: var(--p3);
+}
+
+.builder-field input:focus,
+.builder-field textarea:focus,
+.builder-page-add input:focus {
+    background: rgba(12, 23, 27, 0.6);
+    border-color: var(--p3);
+    box-shadow: 0 0 0 3px rgba(104, 117, 127, 0.12);
+}
+
+.builder-field textarea {
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.55;
+}
+
+.builder-hint {
+    display: block;
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--p3);
+    line-height: 1.5;
+}
+
+/* ================================ PILLS ================================ */
+
+.builder-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.builder-pills button {
+    flex: 1;
+    min-width: 80px;
+    padding: 11px 20px;
+    border-radius: 100px;
+    border: 1px solid rgba(224, 230, 233, 0.12);
+    background: transparent;
+    color: var(--p1);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    outline: none;
+}
+
+.builder-pills button:hover {
+    border-color: rgba(224, 230, 233, 0.25);
+    color: var(--p0);
+    transform: translateY(-1px);
+}
+
+.builder-pills button.selected {
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.builder-pills button.selected:hover {
+    filter: brightness(1.08);
+}
+
+.builder-pills button:active {
+    transform: scale(0.97);
+}
+
+/* ================================ TOGGLES ================================ */
+
+.builder-toggles {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.builder-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+}
+
+.builder-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.builder-toggle-label {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--p0);
+}
+
+.builder-toggle-sub {
+    font-size: 13px;
+    color: var(--p3);
+}
+
+.toggle-track {
+    width: 48px;
+    height: 26px;
+    border-radius: 100px;
+    background: rgba(224, 230, 233, 0.1);
+    border: 1px solid rgba(224, 230, 233, 0.08);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    outline: none;
+    flex-shrink: 0;
+}
+
+.toggle-track.active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+    border-color: transparent;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+}
+
+.toggle-knob {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-track.active .toggle-knob {
+    transform: translateX(22px);
+}
+
+/* ================================ GRADIENT BUTTONS ================================ */
+
+.builder-btn-gradient-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 20px;
+    border-radius: 100px;
+    border: none;
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.builder-btn-gradient-sm:hover {
+    filter: brightness(1.12);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(139, 92, 246, 0.3);
+}
+
+.builder-btn-gradient-sm:active {
+    transform: translateY(0) scale(0.97);
+}
+
+/* ================================ PAGE ADD ROW ================================ */
+
+.builder-page-add {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.builder-page-add input {
+    min-width: 0;
+}
+
+/* ================================ PAGE LIST ================================ */
+
+.builder-page-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.builder-page-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(224, 230, 233, 0.06);
+    background: rgba(12, 23, 27, 0.35);
+    transition: all 0.2s ease;
+}
+
+.builder-page-item:hover {
+    background: rgba(12, 23, 27, 0.5);
+    border-color: rgba(224, 230, 233, 0.1);
+}
+
+.builder-page-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.builder-page-name {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--p0);
+}
+
+.builder-page-path {
+    font-size: 12.5px;
+    color: var(--p3);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.builder-page-delete {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(224, 230, 233, 0.08);
+    background: transparent;
+    color: var(--p3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.builder-page-delete:hover {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* ================================ SAVE ================================ */
+
+.builder-save {
+    padding-top: 8px;
+}
+
+.builder-btn-save {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    font-size: 15.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 28px rgba(139, 92, 246, 0.3);
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    outline: none;
+}
+
+.builder-btn-save:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(139, 92, 246, 0.4);
+}
+
+.builder-btn-save:active {
+    transform: translateY(0);
+}
+
+.builder-btn-save:disabled {
+    opacity: 0.5;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ================================ FOCUS ================================ */
+
+.builder-field input:focus-visible,
+.builder-field textarea:focus-visible,
+.builder-page-add input:focus-visible {
+    outline: none;
+}
+
+.builder-pills button:focus-visible,
+.toggle-track:focus-visible,
+.builder-btn-gradient-sm:focus-visible,
+.builder-page-delete:focus-visible,
+.builder-btn-save:focus-visible {
+    outline: 2px solid var(--p0);
+    outline-offset: 3px;
+}
+
+/* ================================ RESPONSIVE ================================ */
+
+@media (max-width: 640px) {
+    .builder-main {
+        padding: 80px 20px 80px;
+    }
+
+    .builder-card {
+        padding: 24px 22px;
+        border-radius: 20px;
+    }
+
+    .builder-card-title {
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+
+    .builder-pills button {
+        padding: 10px 16px;
+        font-size: 13.5px;
+    }
+
+    .builder-page-add {
+        grid-template-columns: 1fr;
+    }
+
+    .builder-btn-gradient-sm {
+        width: 100%;
+    }
+
+    .builder-card-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .builder-toggle-label {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 400px) {
+    .builder-card {
+        padding: 22px 18px;
+    }
+
+    .builder-pills button {
+        min-width: 70px;
+        padding: 9px 12px;
+    }
+
+    .builder-page-item {
+        padding: 10px 12px;
+    }
+}

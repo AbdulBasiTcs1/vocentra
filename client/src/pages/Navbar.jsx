@@ -36,9 +36,17 @@ const LogoutIcon = () => (
     </svg>
 );
 
+const HomeIcon = () => (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" />
+        <path d="M9 21V12h6v9" />
+    </svg>
+);
+
 const TABS = [
-    { id: "builder", label: "Builder", path: "/builder" },
-    { id: "billing", label: "Billing", path: "/billing" },
+    { id: "home",    label: "Home",    path: "/",        icon: <HomeIcon /> },
+    { id: "builder", label: "Builder", path: "/builder", icon: null },
+    { id: "billing", label: "Billing", path: "/billing", icon: null },
 ];
 
 /**
@@ -57,7 +65,8 @@ export default function Navbar({ user, setUser, activeTab: propActiveTab, onTabC
     const navigate = useNavigate();
 
     // Determine current active tab from prop or route
-    const currentTab = propActiveTab || (location.pathname === "/billing" ? "billing" : "builder");
+    const pathMap = { "/": "home", "/builder": "builder", "/billing": "billing" };
+    const currentTab = propActiveTab || pathMap[location.pathname] || "home";
     const activeIndex = Math.max(0, TABS.findIndex((t) => t.id === currentTab));
 
     // Close the profile popup on outside click or Escape.
@@ -134,7 +143,8 @@ export default function Navbar({ user, setUser, activeTab: propActiveTab, onTabC
                             className={`nav-tab${currentTab === tab.id ? " is-active" : ""}`}
                             onClick={() => handleTabClick(tab)}
                         >
-                            {tab.label}
+                            {tab.icon && <span className="nav-tab-icon">{tab.icon}</span>}
+                            <span className="nav-tab-label">{tab.label}</span>
                         </button>
                     ))}
                 </nav>

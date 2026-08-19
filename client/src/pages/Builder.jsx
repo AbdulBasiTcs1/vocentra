@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import axios from "axios";
 import { serverUrl } from "../App";
 import "./Builder.css";
@@ -15,6 +15,25 @@ const PlusIcon = () => (
 const TrashIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+);
+
+const CopyIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+);
+
+const CheckIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 6 9 17l-5-5" />
+    </svg>
+);
+
+const EditIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
     </svg>
 );
 
@@ -35,6 +54,12 @@ const staggerContainer = {
         opacity: 1,
         transition: { staggerChildren: 0.08, delayChildren: 0.1 },
     },
+};
+
+const viewExit = {
+    opacity: 0,
+    y: -18,
+    transition: { duration: 0.28, ease: "easeIn" },
 };
 
 /* ------------------------------------------------------------------ */
@@ -156,6 +181,12 @@ const ParticleCanvas = () => {
 const THEMES = ["Light", "Dark", "Glass", "Neon"];
 const TONES = ["Friendly", "Professional", "Sales"];
 
+const GEMINI_STATUS_META = {
+    active: { label: "Active", tone: "ok" },
+    quota_exceeded: { label: "Quota Exceeded", tone: "warn" },
+    invalid: { label: "Invalid Key", tone: "bad" },
+};
+
 /* ---------------------------------- Toggle ------------------------------- */
 
 function Toggle({ label, sub, enabled, onChange }) {
@@ -180,6 +211,12 @@ function Toggle({ label, sub, enabled, onChange }) {
 /* ---------------------------------- Component ------------------------------- */
 
 export default function Builder({ user, setUser }) {
+    const setupComplete = Boolean(user?.isSetupComplete);
+
+    // Dashboard when setup is complete, form otherwise / when editing
+    const [isEditing, setIsEditing] = useState(!setupComplete);
+    const showDashboard = setupComplete && !isEditing;
+
     const [assistantName, setAssistantName] = useState(user?.assistantName || "");
     const [businessName, setBusinessName] = useState(user?.businessName || "");
     const [businessType, setBusinessType] = useState(user?.businessType || "");
@@ -195,6 +232,52 @@ export default function Builder({ user, setUser }) {
 
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState({ type: "", message: "" });
+    const [copied, setCopied] = useState(false);
+
+    // If the user object loads async and setup turns out complete, land on dashboard
+    useEffect(() => {
+        if (setupComplete) setIsEditing(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [setupComplete]);
+
+    /* ------------------------------ Derived data ------------------------------ */
+
+    const messagesLeft = Math.max(0, (user?.requestLimit ?? 200) - (user?.totalMessages ?? 0));
+    const planLabel = user?.plan === "pro" ? "Pro" : "Free";
+    const geminiMeta = !user?.geminiApiKey
+        ? { label: "Not Connected", tone: "muted" }
+        : GEMINI_STATUS_META[user?.geminiStatus] || GEMINI_STATUS_META.active;
+
+    const embedCode = `<script src="${serverUrl}/assistant.js" data-user-id="${user?._id || ""}"></script>`;
+
+    /* ------------------------------ Handlers ------------------------------ */
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(embedCode);
+        } catch {
+            const ta = document.createElement("textarea");
+            ta.value = embedCode;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+        }
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleEdit = () => {
+        setStatus({ type: "", message: "" });
+        setIsEditing(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleCancelEdit = () => {
+        setStatus({ type: "", message: "" });
+        setIsEditing(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
     const handleAddPage = () => {
         const { name, path } = newPage;
@@ -240,8 +323,16 @@ export default function Builder({ user, setUser }) {
             });
 
             if (res.data.success) {
-                setStatus({ type: "success", message: "Assistant saved successfully." });
                 if (setUser && res.data.user) setUser(res.data.user);
+                setStatus({
+                    type: "success",
+                    message: setupComplete
+                        ? "Assistant updated successfully."
+                        : "Assistant saved successfully.",
+                });
+                // Return to the dashboard view after a successful save/update
+                setIsEditing(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
             } else {
                 setStatus({ type: "error", message: res.data.message || "Failed to save." });
             }
@@ -256,6 +347,8 @@ export default function Builder({ user, setUser }) {
         }
     };
 
+    /* ---------------------------------- Render ------------------------------- */
+
     return (
         <div className="builder-page">
             <MouseSpotlight />
@@ -264,230 +357,385 @@ export default function Builder({ user, setUser }) {
             <div className="builder-ambient-bottom" aria-hidden="true" />
 
             <main className="builder-main">
-                <motion.div
-                    className="builder-container"
-                    variants={staggerContainer}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {/* Status */}
-                    {status.message && (
+                <AnimatePresence mode="wait">
+                    {showDashboard ? (
+                        /* ==================== DASHBOARD VIEW ==================== */
                         <motion.div
-                            className={`builder-status builder-status--${status.type}`}
-                            variants={fadeUp}
+                            key="dashboard"
+                            className="builder-container"
+                            variants={staggerContainer}
+                            initial="hidden"
+                            animate="visible"
+                            exit={viewExit}
                         >
-                            {status.message}
-                        </motion.div>
-                    )}
+                            {/* Status */}
+                            {status.message && (
+                                <motion.div
+                                    className={`builder-status builder-status--${status.type}`}
+                                    variants={fadeUp}
+                                >
+                                    {status.message}
+                                </motion.div>
+                            )}
 
-                    {/* ==================== Basic Information ==================== */}
-                    <motion.div className="builder-card" variants={fadeUp}>
-                        <h2 className="builder-card-title">Basic Information</h2>
+                            {/* Header */}
+                            <motion.header className="builder-dash-header" variants={fadeUp}>
+                                <h1 className="builder-dash-title">Assistant Builder</h1>
+                                <p className="builder-dash-subtitle">Customize your virtual assistant</p>
+                            </motion.header>
 
-                        <div className="builder-field">
-                            <label>Assistant Name</label>
-                            <input
-                                type="text"
-                                value={assistantName}
-                                onChange={(e) => setAssistantName(e.target.value)}
-                                placeholder="e.g. Vocentra AI"
-                            />
-                        </div>
+                            {/* Summary card */}
+                            <motion.div className="builder-card builder-dash-card" variants={fadeUp}>
+                                <div className="builder-dash-top">
+                                    <div className="builder-dash-identity">
+                                        <span className="builder-dash-label">
+                                            <span className="builder-dash-label-dot" />
+                                            Assistant
+                                        </span>
+                                        <h2 className="builder-dash-name">
+                                            {user?.assistantName || "Vocentra AI"}
+                                        </h2>
+                                        <p className="builder-dash-ready">
+                                            Your assistant is ready to use on your website.
+                                        </p>
+                                    </div>
 
-                        <div className="builder-field">
-                            <label>Business Name</label>
-                            <input
-                                type="text"
-                                value={businessName}
-                                onChange={(e) => setBusinessName(e.target.value)}
-                                placeholder="Your company name"
-                            />
-                        </div>
+                                    {/* Live voice-wave accent */}
+                                    <div className="builder-dash-wave" aria-hidden="true">
+                                        {Array.from({ length: 9 }).map((_, i) => (
+                                            <span
+                                                key={i}
+                                                className="builder-dash-wave-bar"
+                                                style={{ "--d": `${i * 0.12}s` }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
 
-                        <div className="builder-field">
-                            <label>Business Type</label>
-                            <input
-                                type="text"
-                                value={businessType}
-                                onChange={(e) => setBusinessType(e.target.value)}
-                                placeholder="e.g. SaaS, E-commerce, Agency"
-                            />
-                        </div>
+                                {/* Stats */}
+                                <div className="builder-stats">
+                                    <div className="builder-stat">
+                                        <span className="builder-stat-label">Current Plan</span>
+                                        <span className="builder-stat-value">{planLabel}</span>
+                                    </div>
+                                    <div className="builder-stat">
+                                        <span className="builder-stat-label">Gemini Status</span>
+                                        <span className={`builder-stat-value builder-stat-value--${geminiMeta.tone}`}>
+                                            {geminiMeta.tone === "ok" && <span className="builder-stat-dot" />}
+                                            {geminiMeta.label}
+                                        </span>
+                                    </div>
+                                    <div className="builder-stat">
+                                        <span className="builder-stat-label">Messages Left</span>
+                                        <span className="builder-stat-value">{messagesLeft}</span>
+                                    </div>
+                                </div>
 
-                        <div className="builder-field">
-                            <label>Business Description</label>
-                            <textarea
-                                value={businessDescription}
-                                onChange={(e) => setBusinessDescription(e.target.value)}
-                                placeholder="Describe what your business does so the assistant can answer accurately."
-                                rows={3}
-                            />
-                        </div>
+                                {/* Where to paste */}
+                                <div className="builder-note">
+                                    <h3 className="builder-note-title">Where to paste this script?</h3>
+                                    <p className="builder-note-text">
+                                        Paste this script before the closing <code>&lt;/body&gt;</code> tag
+                                        of your website HTML file.
+                                    </p>
+                                    <span className="builder-note-example-label">Example:</span>
+                                    <pre className="builder-code-block">
+                                        <code>
+                                            <span className="tk-tag">&lt;body&gt;</span>{"\n"}
+                                            {"  "}<span className="tk-comment">Your Website Content</span>{"\n"}
+                                            {"\n"}
+                                            {"  "}<span className="tk-tag">&lt;script</span>{" "}
+                                            <span className="tk-attr">src</span><span className="tk-punc">=</span>
+                                            <span className="tk-str">"{serverUrl}/assistant.js"</span>{" "}
+                                            <span className="tk-attr">data-user-id</span><span className="tk-punc">=</span>
+                                            <span className="tk-str">"{user?._id || ""}"</span>
+                                            <span className="tk-tag">&gt;&lt;/script&gt;</span>{"\n"}
+                                            {"\n"}
+                                            <span className="tk-tag">&lt;/body&gt;</span>
+                                        </code>
+                                    </pre>
+                                </div>
 
-                        <div className="builder-field">
-                            <label>Target Audience</label>
-                            <input
-                                type="text"
-                                value={targetAudience}
-                                onChange={(e) => setTargetAudience(e.target.value)}
-                                placeholder="e.g. College students preparing for placements"
-                            />
-                        </div>
-                    </motion.div>
-
-                    {/* ==================== Appearance ==================== */}
-                    <motion.div className="builder-card" variants={fadeUp}>
-                        <h2 className="builder-card-title">Appearance</h2>
-
-                        <div className="builder-field">
-                            <label>Theme</label>
-                            <div className="builder-pills">
-                                {THEMES.map((t) => (
-                                    <button
-                                        key={t}
-                                        type="button"
-                                        className={theme === t ? "selected" : ""}
-                                        onClick={() => setTheme(t)}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="builder-field">
-                            <label>Assistant Tone</label>
-                            <div className="builder-pills">
-                                {TONES.map((t) => (
-                                    <button
-                                        key={t}
-                                        type="button"
-                                        className={tone === t ? "selected" : ""}
-                                        onClick={() => setTone(t)}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="builder-toggles">
-                            <Toggle
-                                label="Enable Voice"
-                                sub="Speech input and output"
-                                enabled={voiceEnabled}
-                                onChange={setVoiceEnabled}
-                            />
-                            <Toggle
-                                label="Enable Navigation"
-                                sub="Assistant can navigate pages"
-                                enabled={navigationEnabled}
-                                onChange={setNavigationEnabled}
-                            />
-                        </div>
-                    </motion.div>
-
-                    {/* ==================== Gemini API Key ==================== */}
-                    <motion.div className="builder-card" variants={fadeUp}>
-                        <div className="builder-card-header">
-                            <div>
-                                <h2 className="builder-card-title">Gemini API KEY</h2>
-                                <p className="builder-card-sub">Add your Gemini API key to power your assistant</p>
-                            </div>
-                            <a
-                                href="https://aistudio.google.com/app/apikey"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="builder-btn-gradient-sm"
-                            >
-                                Get API Key
-                            </a>
-                        </div>
-
-                        <div className="builder-field">
-                            <input
-                                type="password"
-                                value={geminiApiKey}
-                                onChange={(e) => setGeminiApiKey(e.target.value)}
-                                placeholder="Paste your API key..."
-                            />
-                            <span className="builder-hint">
-                                Your API key is securely stored and only used for generating AI responses.
-                            </span>
-                        </div>
-                    </motion.div>
-
-                    {/* ==================== Navigation Pages ==================== */}
-                    <motion.div className="builder-card" variants={fadeUp}>
-                        <div className="builder-card-header">
-                            <div>
-                                <h2 className="builder-card-title">Navigation Pages</h2>
-                                <p className="builder-card-sub">Assistant can redirect users</p>
-                            </div>
-                        </div>
-
-                        <div className="builder-page-add">
-                            <input
-                                type="text"
-                                placeholder="Page Name"
-                                value={newPage.name}
-                                onChange={(e) => setNewPage({ ...newPage, name: e.target.value })}
-                                onKeyDown={(e) => e.key === "Enter" && handleAddPage()}
-                            />
-                            <input
-                                type="text"
-                                placeholder="/path"
-                                value={newPage.path}
-                                onChange={(e) => setNewPage({ ...newPage, path: e.target.value })}
-                                onKeyDown={(e) => e.key === "Enter" && handleAddPage()}
-                            />
-                            <input
-                                type="text"
-                                placeholder="pricing, plans"
-                                value={newPage.keywords}
-                                onChange={(e) => setNewPage({ ...newPage, keywords: e.target.value })}
-                                onKeyDown={(e) => e.key === "Enter" && handleAddPage()}
-                            />
-                            <button type="button" className="builder-btn-gradient-sm" onClick={handleAddPage}>
-                                <PlusIcon />
-                                Add
-                            </button>
-                        </div>
-
-                        {pages.length > 0 && (
-                            <div className="builder-page-list">
-                                {pages.map((page, idx) => (
-                                    <div key={idx} className="builder-page-item">
-                                        <div className="builder-page-info">
-                                            <span className="builder-page-name">{page.name}</span>
-                                            <span className="builder-page-path">{page.path}</span>
-                                        </div>
+                                {/* Embed code */}
+                                <div className="builder-embed">
+                                    <span className="builder-embed-label">Embed Code</span>
+                                    <div className="builder-embed-box">
+                                        <code className="builder-embed-code">{embedCode}</code>
                                         <button
                                             type="button"
-                                            className="builder-page-delete"
-                                            onClick={() => handleRemovePage(idx)}
-                                            aria-label={`Remove ${page.name}`}
+                                            className={`builder-copy-btn ${copied ? "copied" : ""}`}
+                                            onClick={handleCopy}
+                                            aria-label={copied ? "Copied" : "Copy embed code"}
+                                            title={copied ? "Copied!" : "Copy"}
                                         >
-                                            <TrashIcon />
+                                            {copied ? <CheckIcon /> : <CopyIcon />}
                                         </button>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </motion.div>
+                                </div>
+                            </motion.div>
 
-                    {/* ==================== Save ==================== */}
-                    <motion.div className="builder-save" variants={fadeUp}>
-                        <button
-                            type="button"
-                            className="builder-btn-save"
-                            onClick={handleSave}
-                            disabled={isSaving}
+                            {/* Edit action */}
+                            <motion.div className="builder-dash-actions" variants={fadeUp}>
+                                <motion.button
+                                    type="button"
+                                    className="builder-btn-edit"
+                                    onClick={handleEdit}
+                                    whileHover={{ y: -2 }}
+                                    whileTap={{ scale: 0.97 }}
+                                >
+                                    <EditIcon />
+                                    Edit Assistant
+                                </motion.button>
+                            </motion.div>
+                        </motion.div>
+                    ) : (
+                        /* ==================== FORM VIEW ==================== */
+                        <motion.div
+                            key="form"
+                            className="builder-container"
+                            variants={staggerContainer}
+                            initial="hidden"
+                            animate="visible"
+                            exit={viewExit}
                         >
-                            {isSaving ? "Saving…" : "Save Assistant"}
-                        </button>
-                    </motion.div>
-                </motion.div>
+                            {/* Status */}
+                            {status.message && (
+                                <motion.div
+                                    className={`builder-status builder-status--${status.type}`}
+                                    variants={fadeUp}
+                                >
+                                    {status.message}
+                                </motion.div>
+                            )}
+
+                            {/* Header */}
+                            <motion.header className="builder-dash-header" variants={fadeUp}>
+                                <h1 className="builder-dash-title">Assistant Builder</h1>
+                                <p className="builder-dash-subtitle">Customize your virtual assistant</p>
+                            </motion.header>
+
+                            {/* ==================== Basic Information ==================== */}
+                            <motion.div className="builder-card" variants={fadeUp}>
+                                <h2 className="builder-card-title">Basic Information</h2>
+
+                                <div className="builder-field">
+                                    <label>Assistant Name</label>
+                                    <input
+                                        type="text"
+                                        value={assistantName}
+                                        onChange={(e) => setAssistantName(e.target.value)}
+                                        placeholder="e.g. Vocentra AI"
+                                    />
+                                </div>
+
+                                <div className="builder-field">
+                                    <label>Business Name</label>
+                                    <input
+                                        type="text"
+                                        value={businessName}
+                                        onChange={(e) => setBusinessName(e.target.value)}
+                                        placeholder="Your company name"
+                                    />
+                                </div>
+
+                                <div className="builder-field">
+                                    <label>Business Type</label>
+                                    <input
+                                        type="text"
+                                        value={businessType}
+                                        onChange={(e) => setBusinessType(e.target.value)}
+                                        placeholder="e.g. SaaS, E-commerce, Agency"
+                                    />
+                                </div>
+
+                                <div className="builder-field">
+                                    <label>Business Description</label>
+                                    <textarea
+                                        value={businessDescription}
+                                        onChange={(e) => setBusinessDescription(e.target.value)}
+                                        placeholder="Describe what your business does so the assistant can answer accurately."
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="builder-field">
+                                    <label>Target Audience</label>
+                                    <input
+                                        type="text"
+                                        value={targetAudience}
+                                        onChange={(e) => setTargetAudience(e.target.value)}
+                                        placeholder="e.g. College students preparing for placements"
+                                    />
+                                </div>
+                            </motion.div>
+
+                            {/* ==================== Appearance ==================== */}
+                            <motion.div className="builder-card" variants={fadeUp}>
+                                <h2 className="builder-card-title">Appearance</h2>
+
+                                <div className="builder-field">
+                                    <label>Theme</label>
+                                    <div className="builder-pills">
+                                        {THEMES.map((t) => (
+                                            <button
+                                                key={t}
+                                                type="button"
+                                                className={theme === t ? "selected" : ""}
+                                                onClick={() => setTheme(t)}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="builder-field">
+                                    <label>Assistant Tone</label>
+                                    <div className="builder-pills">
+                                        {TONES.map((t) => (
+                                            <button
+                                                key={t}
+                                                type="button"
+                                                className={tone === t ? "selected" : ""}
+                                                onClick={() => setTone(t)}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="builder-toggles">
+                                    <Toggle
+                                        label="Enable Voice"
+                                        sub="Speech input and output"
+                                        enabled={voiceEnabled}
+                                        onChange={setVoiceEnabled}
+                                    />
+                                    <Toggle
+                                        label="Enable Navigation"
+                                        sub="Assistant can navigate pages"
+                                        enabled={navigationEnabled}
+                                        onChange={setNavigationEnabled}
+                                    />
+                                </div>
+                            </motion.div>
+
+                            {/* ==================== Gemini API Key ==================== */}
+                            <motion.div className="builder-card" variants={fadeUp}>
+                                <div className="builder-card-header">
+                                    <div>
+                                        <h2 className="builder-card-title">Gemini API KEY</h2>
+                                        <p className="builder-card-sub">Add your Gemini API key to power your assistant</p>
+                                    </div>
+                                    <a
+                                        href="https://aistudio.google.com/app/apikey"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="builder-btn-gradient-sm"
+                                    >
+                                        Get API Key
+                                    </a>
+                                </div>
+
+                                <div className="builder-field">
+                                    <input
+                                        type="password"
+                                        value={geminiApiKey}
+                                        onChange={(e) => setGeminiApiKey(e.target.value)}
+                                        placeholder="Paste your API key..."
+                                    />
+                                    <span className="builder-hint">
+                                        Your API key is securely stored and only used for generating AI responses.
+                                    </span>
+                                </div>
+                            </motion.div>
+
+                            {/* ==================== Navigation Pages ==================== */}
+                            <motion.div className="builder-card" variants={fadeUp}>
+                                <div className="builder-card-header">
+                                    <div>
+                                        <h2 className="builder-card-title">Navigation Pages</h2>
+                                        <p className="builder-card-sub">Assistant can redirect users</p>
+                                    </div>
+                                </div>
+
+                                <div className="builder-page-add">
+                                    <input
+                                        type="text"
+                                        placeholder="Page Name"
+                                        value={newPage.name}
+                                        onChange={(e) => setNewPage({ ...newPage, name: e.target.value })}
+                                        onKeyDown={(e) => e.key === "Enter" && handleAddPage()}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="/path"
+                                        value={newPage.path}
+                                        onChange={(e) => setNewPage({ ...newPage, path: e.target.value })}
+                                        onKeyDown={(e) => e.key === "Enter" && handleAddPage()}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="pricing, plans"
+                                        value={newPage.keywords}
+                                        onChange={(e) => setNewPage({ ...newPage, keywords: e.target.value })}
+                                        onKeyDown={(e) => e.key === "Enter" && handleAddPage()}
+                                    />
+                                    <button type="button" className="builder-btn-gradient-sm" onClick={handleAddPage}>
+                                        <PlusIcon />
+                                        Add
+                                    </button>
+                                </div>
+
+                                {pages.length > 0 && (
+                                    <div className="builder-page-list">
+                                        {pages.map((page, idx) => (
+                                            <div key={idx} className="builder-page-item">
+                                                <div className="builder-page-info">
+                                                    <span className="builder-page-name">{page.name}</span>
+                                                    <span className="builder-page-path">{page.path}</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="builder-page-delete"
+                                                    onClick={() => handleRemovePage(idx)}
+                                                    aria-label={`Remove ${page.name}`}
+                                                >
+                                                    <TrashIcon />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            {/* ==================== Save / Update ==================== */}
+                            <motion.div className="builder-save" variants={fadeUp}>
+                                {setupComplete && (
+                                    <button
+                                        type="button"
+                                        className="builder-btn-cancel"
+                                        onClick={handleCancelEdit}
+                                        disabled={isSaving}
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    className="builder-btn-save"
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving
+                                        ? setupComplete ? "Updating…" : "Saving…"
+                                        : setupComplete ? "Update Assistant" : "Save Assistant"}
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
         </div>
     );

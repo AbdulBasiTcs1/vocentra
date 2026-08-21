@@ -4,6 +4,7 @@ import connectDB from "./configs/connectDB.js";
 import cookieParser from "cookie-parser";
 import AuthRouter from "./routes/auth.route.js";
 import UserRouter from "./routes/user.route.js";
+import AssistantRouter from "./routes/assistant.route.js";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -21,12 +22,14 @@ app.use((req, res, next) => {
     if (
         req.path.startsWith("/assistant") ||
         req.path.startsWith("/logo") ||
+        req.path.startsWith("/api/assistant") ||
         req.path.startsWith("/api/user/assistant") ||
-        req.path.startsWith("/api/user/public-assistant")
+        req.path.startsWith("/api/user/public-assistant") ||
+        req.path.startsWith("/api/user/chat")
     ) {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
         if (req.method === "OPTIONS") {
             return res.sendStatus(200);
         }
@@ -56,6 +59,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", AuthRouter);
 app.use("/api/user", UserRouter);
+app.use("/api/assistant", AssistantRouter);
 
 app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);

@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import { generateGeminiResponse } from "../configs/gemini.js";
 
 export const getPublicAssistant = async (req, res) => {
     try {
@@ -8,7 +9,6 @@ export const getPublicAssistant = async (req, res) => {
         }
 
         const user = await User.findById(id).select("-geminiApiKey");
-
         if (!user) {
             return res.status(404).json({ success: false, message: "Assistant not found" });
         }
@@ -28,41 +28,50 @@ export const getPublicAssistant = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error("Error in getPublicAssistant controller:", error);
+        console.error("[getPublicAssistant] Error:", error);
         return res.status(500).json({ success: false, message: "Internal Server Error." });
     }
 };
-
 
 export const chatAssistant = async (req, res) => {
     try {
         const userId = req.params.id || req.body.userId;
         const { message, conversationHistory, currentPageUrl } = req.body;
 
+        // ── 1. Input validation ────────────────────────────────────────────
         if (!userId) {
             return res.status(400).json({ success: false, message: "User ID is required." });
         }
-
         if (!message || typeof message !== "string" || !message.trim()) {
             return res.status(400).json({ success: false, message: "Message is required." });
         }
 
+        // ── 2. Load user ───────────────────────────────────────────────────
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: "Assistant not found." });
         }
 
-        // Check request limit
+        // ── 3. Check assistant is active ───────────────────────────────────
+        if (!user.geminiApiKey) {
+            return res.status(400).json({ success: false, message: "Assistant is not configured yet." });
+        }
+        if (user.geminiStatus === "inactive") {
+            return res.status(400).json({ success: false, message: "Assistant is currently inactive." });
+        }
+
+        // ── 4. Check message limit ─────────────────────────────────────────
         const limit = user.requestLimit || 200;
         const total = user.totalMessages || 0;
         if (total >= limit) {
             return res.status(429).json({
                 success: false,
                 reply: `This assistant has reached its monthly message limit. Please contact ${user.businessName || "the website administrator"}.`,
-                limitReached: true
+                limitReached: true,
             });
         }
 
+        // ── 5. Build context variables ─────────────────────────────────────
         const assistantName = user.assistantName || "Vocentra";
         const businessName = user.businessName || "our company";
         const businessType = user.businessType || "Business";
@@ -70,152 +79,127 @@ export const chatAssistant = async (req, res) => {
         const targetAudience = user.targetAudience || "Visitors and customers";
         const tone = user.tone || "friendly";
         const pages = user.pages || [];
-        const enableNavigation = user.enableNavigation ?? user.navigationEnabled ?? true;
+        const enableNavigation = user.navigationEnabled ?? user.enableNavigation ?? true;
 
-        let toneInstructions = "Be polite, helpful, and concise.";
+        // Tone instructions
+        let toneInstructions = "Speak warmly, casually, and helpfully with a friendly conversational demeanor.";
         if (tone === "professional") {
-            toneInstructions = "Speak professionally, authoritatively, with precision and courtesy. Keep answers succinct.";
+            toneInstructions = "Speak professionally, authoritatively, with precision and courtesy.";
         } else if (tone === "sales") {
             toneInstructions = "Speak persuasively, enthusiastically, and highlight benefits to encourage conversions.";
-        } else {
-            toneInstructions = "Speak warmly, casually, and helpfully with a friendly conversational demeanor.";
         }
 
+        // Pages list for system prompt
         let pagesInfo = "No specific pages registered.";
         if (pages.length > 0) {
-            pagesInfo = pages.map(p => `- Page "${(p.name || "").trim()}" (Path: "${(p.path || "").trim()}", Keywords: ${(p.keywords || []).map(k => `"${k.trim()}"`).join(", ") || "none"})`).join("\n");
+            pagesInfo = pages
+                .map(p =>
+                    `- "${(p.name || "").trim()}" (path: "${(p.path || "").trim()}", keywords: ${(p.keywords || []).map(k => `"${k.trim()}"`).join(", ") || "none"
+                    })`
+                )
+                .join("\n");
         }
 
-        const systemPrompt = `You are ${assistantName}, the voice AI assistant for "${businessName}" (${businessType}).
-Business Context & Description: ${businessDescription}
-Target Audience: ${targetAudience}
-Tone: ${tone} (${toneInstructions})
-
-Voice output constraint: Speak in short, clear natural sentences suitable for text-to-speech audio. Keep answers under 2-3 sentences. Do NOT use markdown asterisks or lists.
-
-Available Website Pages:
-${pagesInfo}
-
-${enableNavigation ? `Navigation Instructions:
-When the user asks to visit, open, view, or navigate to any page matching the registered pages (or asks questions like "take me to builder", "open pricing", "how to login", etc.), you MUST include a navigation directive at the very end of your reply on a new line in this EXACT format:
+        // Navigation instructions block
+        const navigationInstructions = enableNavigation
+            ? `Navigation Instructions:
+When the user asks to visit, open, view, or navigate to any page, you MUST include a navigation directive at the very end of your reply in this EXACT format:
 [NAVIGATE: <exact_path>]
-Example: "Sure! Let me take you to the builder page. [NAVIGATE: /builder]"` : ""}
+Example: "Sure! Taking you to the pricing page. [NAVIGATE: /pricing]"
+Available pages:
+${pagesInfo}`
+            : "";
+
+        // ── 6. Build system prompt ─────────────────────────────────────────
+        const systemPrompt = `You are ${assistantName}, the voice AI assistant for "${businessName}" (${businessType}).
+Business: ${businessDescription}
+Target Audience: ${targetAudience}
+Tone: ${tone} — ${toneInstructions}
+
+STRICT VOICE RULES:
+1. Reply in 15 words or fewer or if required then complete so users can understand.
+2. Never use markdown, bullet points, or asterisks.
+3. Speak naturally as if talking out loud.
+4. Be direct and helpful.
+5. No lengthy explanations.
+
+${navigationInstructions}
 
 Current visitor page: ${currentPageUrl || "Unknown"}`;
 
+        // ── 7. Call Gemini ─────────────────────────────────────────────────
         let replyText = "";
         let navigateTo = null;
 
-        // If Gemini API Key is configured on the user
-        if (user.geminiApiKey) {
-            try {
-                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(user.geminiApiKey)}`;
-
-                const contents = [];
-                if (Array.isArray(conversationHistory)) {
-                    for (const turn of conversationHistory.slice(-6)) {
-                        if (turn.role && turn.text) {
-                            contents.push({
-                                role: turn.role === "assistant" ? "model" : "user",
-                                parts: [{ text: turn.text }]
-                            });
-                        }
-                    }
-                }
-
-                contents.push({
-                    role: "user",
-                    parts: [{ text: message }]
-                });
-
-                const response = await fetch(geminiUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        systemInstruction: {
-                            parts: [{ text: systemPrompt }]
-                        },
-                        contents: contents,
-                        generationConfig: {
-                            temperature: 0.7,
-                            maxOutputTokens: 250
-                        }
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                    user.geminiStatus = "active";
-                } else {
-                    const errData = await response.json().catch(() => ({}));
-                    console.error("Gemini API Error:", errData);
-                    if (response.status === 400 || response.status === 403) {
-                        user.geminiStatus = "invalid";
-                    } else if (response.status === 429) {
-                        user.geminiStatus = "quota_exceeded";
-                    }
-                }
-            } catch (geminiErr) {
-                console.error("Error contacting Gemini API:", geminiErr);
-            }
+        try {
+            replyText = await generateGeminiResponse(
+                message.trim(),
+                user.geminiApiKey,
+                user,
+                systemPrompt,
+                conversationHistory
+            );
+        } catch (geminiErr) {
+            console.error("[chatAssistant] Gemini error:", geminiErr.message);
+            // replyText stays empty — fallback below will handle it
         }
 
-        // Fallback intelligent response if Gemini is not connected or returned empty
+        // ── 8. Fallback if Gemini returned nothing ─────────────────────────
         if (!replyText) {
             const lower = message.toLowerCase().trim();
 
-            // Intelligent Page Navigation Detection
+            // Try keyword-based navigation match first
             if (enableNavigation && pages.length > 0) {
                 for (const page of pages) {
                     const rawName = (page.name || "").trim().toLowerCase();
                     const cleanName = rawName.replace(/page$/i, "").trim();
                     const kws = (page.keywords || []).map(k => (k || "").trim().toLowerCase()).filter(Boolean);
-                    
                     const nameMatch = rawName && (lower.includes(rawName) || lower.includes(cleanName));
-                    const kwMatch = kws.some(k => lower.includes(k) || k.split(" ").some(word => word.length > 3 && lower.includes(word)));
+                    const kwMatch = kws.some(k => lower.includes(k));
 
                     if (nameMatch || kwMatch) {
-                        replyText = `Sure! Navigating you to the ${page.name.trim()} page. [NAVIGATE: ${page.path.trim()}]`;
+                        replyText = `Sure! Taking you to the ${page.name.trim()} page. [NAVIGATE: ${page.path.trim()}]`;
                         break;
                     }
                 }
             }
 
+            // Generic fallback replies
             if (!replyText) {
                 if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
-                    replyText = `Hello! I'm ${assistantName} for ${businessName}. How can I assist you with our services today?`;
-                } else if (lower.includes("who are you") || lower.includes("what is this") || lower.includes("what do you do")) {
-                    replyText = `I am ${assistantName}, the AI assistant for ${businessName}. ${businessDescription}`;
+                    replyText = `Hi! I'm ${assistantName} for ${businessName}. How can I help?`;
+                } else if (lower.includes("who are you") || lower.includes("what do you do")) {
+                    replyText = `I'm ${assistantName}, voice assistant for ${businessName}.`;
                 } else if (lower.includes("help") || lower.includes("contact") || lower.includes("support")) {
-                    replyText = `We are here to help! ${businessDescription} Feel free to ask any questions or explore our website.`;
+                    replyText = `I'm here to help! Ask me anything about ${businessName}.`;
                 } else {
-                    replyText = `At ${businessName}, ${businessDescription} How can I help you today?`;
+                    replyText = `I'm ${assistantName}. How can I assist you today?`;
                 }
             }
         }
 
-        // Extract [NAVIGATE: path]
+        // ── 9. Extract [NAVIGATE: path] directive from reply ───────────────
         const navMatch = replyText.match(/\[NAVIGATE:\s*([^\]]+)\]/i);
         if (navMatch) {
             navigateTo = navMatch[1].trim();
             replyText = replyText.replace(/\[NAVIGATE:\s*[^\]]+\]/gi, "").trim();
         }
 
-        // Increment message count
+        // ── 10. Increment message count and save ───────────────────────────
         user.totalMessages = (user.totalMessages || 0) + 1;
         await user.save();
 
+        // ── 11. Return response ────────────────────────────────────────────
         return res.status(200).json({
             success: true,
             reply: replyText,
             navigateTo: navigateTo,
             totalMessages: user.totalMessages,
-            messagesLeft: Math.max(0, limit - user.totalMessages)
+            messagesLeft: Math.max(0, limit - user.totalMessages),
         });
 
     } catch (error) {
-        console.error("Error in chatAssistant controller:", error);
+        console.error("[chatAssistant] Error:", error);
         return res.status(500).json({ success: false, message: "Internal Server Error." });
     }
 };

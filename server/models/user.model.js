@@ -80,10 +80,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: [
             "active",
-            "quota_exceeded",
+            "inactive",
             "invalid",
+            "quota_exceeded",
         ],
-        default: "active"
+        default: "inactive"
     },
     totalMessages: {
         type: Number,

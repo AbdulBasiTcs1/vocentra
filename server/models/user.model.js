@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    targetAudience: {
+        type: String,
+        default: ""
+    },
     tone: {
         type: String,
         enum: ["professional", "friendly", "sales"],
@@ -52,11 +56,19 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    voiceEnabled: {
+        type: Boolean,
+        default: true
+    },
     pages: {
         type: [pageSchema],
         default: [],
     },
     enableNavigation: {
+        type: Boolean,
+        default: true
+    },
+    navigationEnabled: {
         type: Boolean,
         default: true
     },

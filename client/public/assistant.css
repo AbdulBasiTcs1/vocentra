@@ -244,9 +244,9 @@
 
 .vocentra-orb-wrap {
     position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 24px 0 32px;
+    width: 110px;
+    height: 110px;
+    margin: 16px 0 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -297,36 +297,39 @@
 }
 
 .vocentra-sub {
-    font-size: 14px;
-    line-height: 1.55;
-    margin: 0 0 28px;
-    max-width: 250px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin: 0 0 16px;
+    max-width: 240px;
     transition: color 0.4s ease;
+    flex-shrink: 0;
 }
 
 /* ================================ LISTENING & TRANSCRIPT ================================ */
 
 .vocentra-listening {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 500;
-    margin-bottom: 14px;
-    opacity: 0.95;
-    min-height: 18px;
+    margin-bottom: 6px;
+    opacity: 0.9;
+    flex-shrink: 0;
     transition: color 0.4s ease;
 }
 
 .vocentra-transcript {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    min-height: 18px;
-    max-height: 36px;
+    height: 22px;
+    max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 8px;
+    white-space: nowrap;
+    margin-bottom: 0;
     font-style: italic;
     color: #ffffff;
-    opacity: 0.95;
-    transition: color 0.4s ease;
+    opacity: 0.9;
+    flex-shrink: 0;
+    transition: color 0.4s ease, opacity 0.3s ease;
 }
 
 /* ================================ WAVEFORM ================================ */
@@ -336,8 +339,9 @@
     align-items: flex-end;
     justify-content: center;
     gap: 3.5px;
-    height: 44px;
-    margin-bottom: 36px;
+    height: 40px;
+    margin: 16px 0 20px;
+    flex-shrink: 0;
 }
 
 .vocentra-wave-bar {

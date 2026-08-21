@@ -33,9 +33,6 @@
 
     const cssUrl = `${baseUrl}/assistant.css`;
 
-    /* --------------------------------------------------------------------------
-       2. Inject CSS Stylesheet
-       -------------------------------------------------------------------------- */
     if (!document.querySelector(`link[href="${cssUrl}"]`)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -43,9 +40,6 @@
         document.head.appendChild(link);
     }
 
-    /* --------------------------------------------------------------------------
-       3. Theme Definitions (Exact copy from Home AssistantPreview)
-       -------------------------------------------------------------------------- */
     const THEMES = {
         dark: {
             pageBg: "radial-gradient(80% 60% at 50% 0%, #1a1630 0%, #0c0c14 40%, #000000 100%)",
@@ -101,16 +95,10 @@
         },
     };
 
-    const THEME_DOTS = [
-        { key: "dark", bg: "#1e1b2e", ring: "rgba(255,255,255,0.25)" },
-        { key: "light", bg: "#f8fafc", ring: "rgba(0,0,0,0.15)" },
-        { key: "glass", bg: "rgba(255,255,255,0.25)", ring: "rgba(255,255,255,0.45)" },
-        { key: "neon", bg: "#10b981", ring: "rgba(16,185,129,0.5)" },
-    ];
+
 
     const WAVE_BARS = [0.35, 0.8, 0.55, 0.95, 0.45, 0.75, 0.5, 0.9, 0.4, 0.7, 0.85, 0.5, 0.65, 0.4, 0.8, 0.55, 0.95, 0.45, 0.7, 0.6];
 
-    // Standard vector mic SVG icon from AssistantPreview
     const MIC_SVG_ICON = `
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
@@ -120,9 +108,6 @@
         </svg>
     `;
 
-    /* --------------------------------------------------------------------------
-       4. State Management
-       -------------------------------------------------------------------------- */
     let assistantData = {
         assistantName: "Vocentra",
         businessName: "",
@@ -140,9 +125,6 @@
     let currentTheme = "dark";
     let recognition = null;
 
-    /* --------------------------------------------------------------------------
-       5. Initialize Widget DOM
-       -------------------------------------------------------------------------- */
     function createWidgetDOM() {
         const container = document.createElement("div");
         container.id = "vocentra-widget-container";
@@ -158,19 +140,7 @@
                     </svg>
                 </button>
 
-                <!-- Theme Switcher Dots -->
-                <div class="vocentra-dots">
-                    ${THEME_DOTS.map(dot => `
-                        <button 
-                            type="button" 
-                            class="vocentra-dot ${currentTheme === dot.key ? 'active' : ''}" 
-                            data-theme="${dot.key}" 
-                            style="background: ${dot.bg}; --ring: ${dot.ring};"
-                            title="${dot.key} theme"
-                            aria-label="${dot.key} theme"
-                        ></button>
-                    `).join("")}
-                </div>
+
 
                 <!-- Gradient Orb -->
                 <div class="vocentra-orb-wrap">
@@ -178,21 +148,20 @@
                     <div class="vocentra-orb-glow" id="vocentra-orb-glow"></div>
                 </div>
 
-                <!-- Typography -->
-                <h2 class="vocentra-title" id="vocentra-title">Hello! I'm Vocentra</h2>
-                <p class="vocentra-sub" id="vocentra-sub">
-                    Your smart voice assistant.<br />
-                    Ask anything about your website.
-                </p>
+                <!-- Title & short subtitle -->
+                <h2 class="vocentra-title" id="vocentra-title"></h2>
+                <p class="vocentra-sub" id="vocentra-sub"></p>
 
-                <!-- Listening state -->
-                <div class="vocentra-listening" id="vocentra-status">Listening...</div>
+                <!-- Status line: Listening / Speaking / Thinking -->
+                <div class="vocentra-listening" id="vocentra-status">Tap mic to speak</div>
+
+                <!-- Spoken transcript: only what the user said -->
                 <div class="vocentra-transcript" id="vocentra-transcript"></div>
 
                 <!-- Waveform -->
                 <div class="vocentra-waveform" id="vocentra-waveform">
                     ${WAVE_BARS.map((h, i) => `
-                        <span class="vocentra-wave-bar" style="height: ${10 + h * 28}px; animation-delay: ${i * 0.06}s;"></span>
+                        <span class="vocentra-wave-bar idle" style="height: ${10 + h * 28}px; animation-delay: ${i * 0.06}s;"></span>
                     `).join("")}
                 </div>
 
@@ -207,7 +176,7 @@
 
             <!-- Floating Launcher Bubble -->
             <div class="vocentra-launcher-wrap">
-                <div class="vocentra-launcher-badge" id="vocentra-launcher-badge">Talk with Vocentra</div>
+                <div class="vocentra-launcher-badge" id="vocentra-launcher-badge"></div>
                 <button type="button" class="vocentra-launcher-btn" id="vocentra-launcher-btn" aria-label="Open Voice Assistant">
                     <div class="vocentra-launcher-glow" id="vocentra-launcher-glow"></div>
                     <span class="vocentra-launcher-mic-icon">${MIC_SVG_ICON}</span>
@@ -223,9 +192,6 @@
         setupEventListeners(container);
     }
 
-    /* --------------------------------------------------------------------------
-       6. Apply Theme Styling
-       -------------------------------------------------------------------------- */
     function applyTheme(themeKey) {
         currentTheme = themeKey;
         const t = THEMES[themeKey] || THEMES.dark;
@@ -271,20 +237,9 @@
         if (launcherBtn) launcherBtn.style.background = t.button;
         if (launcherGlow) launcherGlow.style.background = t.micGlow;
 
-        // Active dot
-        const dots = popup.querySelectorAll(".vocentra-dot");
-        dots.forEach(dot => {
-            if (dot.getAttribute("data-theme") === themeKey) {
-                dot.classList.add("active");
-            } else {
-                dot.classList.remove("active");
-            }
-        });
+
     }
 
-    /* --------------------------------------------------------------------------
-       7. Update Content based on User's Saved Assistant Data
-       -------------------------------------------------------------------------- */
     function updateAssistantUI() {
         const title = document.getElementById("vocentra-title");
         const sub = document.getElementById("vocentra-sub");
@@ -292,20 +247,15 @@
 
         const name = assistantData.assistantName || "Vocentra";
         const business = assistantData.businessName || "";
-        const desc = assistantData.businessDescription || "";
 
         if (title) {
             title.textContent = `Hello! I'm ${name}`;
         }
 
         if (sub) {
-            if (business) {
-                sub.innerHTML = `Your smart voice assistant for <strong>${business}</strong>.<br/>${desc ? desc : 'Ask anything about your website.'}`;
-            } else if (desc) {
-                sub.innerHTML = `${desc}<br/>Ask anything about your website.`;
-            } else {
-                sub.innerHTML = `Your smart voice assistant.<br />Ask anything about your website.`;
-            }
+            sub.textContent = business
+                ? `Voice assistant for ${business}.`
+                : `Your smart voice assistant.`;
         }
 
         if (badge) {
@@ -319,9 +269,6 @@
         }
     }
 
-    /* --------------------------------------------------------------------------
-       8. Speech Recognition & Voice Interaction
-       -------------------------------------------------------------------------- */
     function initSpeechRecognition() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRec) {
@@ -343,9 +290,11 @@
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 transcript += event.results[i][0].transcript;
             }
+
+            // Show ONLY the spoken text in the transcript area
             const transcriptEl = document.getElementById("vocentra-transcript");
             if (transcriptEl) {
-                transcriptEl.textContent = `"${transcript}"`;
+                transcriptEl.textContent = transcript;
             }
 
             if (event.results[0].isFinal) {
@@ -409,80 +358,143 @@
         }
     }
 
-    function speakResponse(text) {
+    let conversationHistory = [];
+    let currentUtterance = null;
+
+    function speakResponse(text, onComplete) {
         if (!("speechSynthesis" in window) || !assistantData.voiceEnabled) {
+            if (onComplete) onComplete();
             return;
         }
-        window.speechSynthesis.cancel();
+
+        try {
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.resume();
+        } catch (e) {}
+
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        currentUtterance = utterance; // Prevent garbage collection in Chrome
+
+        // Customize voice cadence based on assistant tone
+        if (assistantData.tone === "professional") {
+            utterance.rate = 1.0;
+            utterance.pitch = 0.95;
+        } else if (assistantData.tone === "sales") {
+            utterance.rate = 1.08;
+            utterance.pitch = 1.05;
+        } else {
+            utterance.rate = 1.02;
+            utterance.pitch = 1.0;
+        }
+
+        let completed = false;
+        function finish() {
+            if (completed) return;
+            completed = true;
+            updateVoiceState("Listening...", false);
+            if (onComplete) onComplete();
+        }
 
         utterance.onstart = () => {
             updateVoiceState("Speaking...", true);
         };
-        utterance.onend = () => {
-            updateVoiceState("Listening...", false);
-        };
-        utterance.onerror = () => {
-            updateVoiceState("Listening...", false);
-        };
+        utterance.onend = finish;
+        utterance.onerror = finish;
+
+        // Safety timeout in case browser speech engine hangs
+        const estimatedDurationMs = Math.max(2000, (text.length / 15) * 1000);
+        setTimeout(finish, estimatedDurationMs + 1500);
 
         window.speechSynthesis.speak(utterance);
     }
 
-    function handleUserQuery(text) {
-        const query = text.toLowerCase().trim();
+    async function handleUserQuery(text) {
+        const query = text.trim();
+        if (!query) return;
+
+        // Show the user's spoken words in transcript immediately
+        const transcriptEl = document.getElementById("vocentra-transcript");
+        if (transcriptEl) transcriptEl.textContent = query;
+
         updateVoiceState("Thinking...", true);
+        conversationHistory.push({ role: "user", text: query });
 
-        // Check for navigation intent if navigation is enabled
-        if (assistantData.navigationEnabled && assistantData.pages && assistantData.pages.length > 0) {
-            for (const page of assistantData.pages) {
-                const pageName = (page.name || "").toLowerCase();
-                const keywords = (page.keywords || []).map(k => k.toLowerCase());
-                
-                const matched = query.includes(pageName) || keywords.some(k => k && query.includes(k));
-                if (matched && page.path) {
-                    const response = `Navigating you to ${page.name || "the page"}.`;
-                    speakResponse(response);
-                    setTimeout(() => {
-                        window.location.href = page.path;
-                    }, 1200);
-                    return;
-                }
+        let reply = "";
+        let navigateTo = null;
+
+        try {
+            const chatEndpoint = `${baseUrl}/api/assistant/${userId || ""}/chat`;
+            let response = await fetch(chatEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: userId,
+                    message: query,
+                    conversationHistory: conversationHistory,
+                    currentPageUrl: window.location.href
+                })
+            });
+
+            if (!response.ok) {
+                response = await fetch(`${baseUrl}/api/user/assistant/${userId || ""}/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        userId: userId,
+                        message: query,
+                        conversationHistory: conversationHistory,
+                        currentPageUrl: window.location.href
+                    })
+                });
             }
+
+            if (response.ok) {
+                const data = await response.json();
+                reply = data.reply || "";
+                navigateTo = data.navigateTo || null;
+            }
+        } catch (error) {
+            console.error("[Vocentra] Chat API error:", error);
         }
 
-        // Conversational response based on business configuration
-        let reply = `Hello! I am ${assistantData.assistantName}. `;
-        if (assistantData.businessName) {
-            reply += `We represent ${assistantData.businessName}. `;
+        // Fallback response if offline or backend error
+        if (!reply) {
+            reply = `I am ${assistantData.assistantName} for ${assistantData.businessName || "our website"}. How can I assist you today?`;
         }
-        if (assistantData.businessDescription) {
-            reply += `${assistantData.businessDescription} `;
-        }
-        reply += "How can I help you today?";
 
-        setTimeout(() => {
-            speakResponse(reply);
-        }, 500);
+        conversationHistory.push({ role: "assistant", text: reply });
+
+        speakResponse(reply, () => {
+            // Clear transcript after speaking, reset status
+            if (transcriptEl) transcriptEl.textContent = "";
+            updateVoiceState("Tap mic to speak", false);
+
+            if (navigateTo && assistantData.navigationEnabled) {
+                console.log("[Vocentra] Navigating to:", navigateTo);
+                setTimeout(() => {
+                    if (navigateTo.startsWith("http://") || navigateTo.startsWith("https://")) {
+                        window.location.href = navigateTo;
+                    } else {
+                        window.location.href = navigateTo;
+                    }
+                }, 400);
+            }
+        });
     }
 
-    /* --------------------------------------------------------------------------
-       9. Event Listeners & UI Binding
-       -------------------------------------------------------------------------- */
     function setupEventListeners(container) {
         const launcherBtn = container.querySelector("#vocentra-launcher-btn");
         const closeBtn = container.querySelector("#vocentra-close-btn");
         const micBtn = container.querySelector("#vocentra-mic-btn");
-        const dots = container.querySelectorAll(".vocentra-dot");
 
         function togglePopup() {
             isOpen = !isOpen;
             if (isOpen) {
                 container.classList.add("vocentra-widget-open");
                 if (assistantData.voiceEnabled && !isListening) {
-                    speakResponse(`Hello! I'm ${assistantData.assistantName}. Ask anything about our website.`);
+                    const name = assistantData.assistantName || "Vocentra";
+                    const business = assistantData.businessName || "our website";
+                    speakResponse(`Hello! I'm ${name}, the voice assistant for ${business}. How can I help you?`);
                 }
             } else {
                 container.classList.remove("vocentra-widget-open");
@@ -503,20 +515,8 @@
         micBtn.addEventListener("click", () => {
             toggleListening();
         });
-
-        dots.forEach(dot => {
-            dot.addEventListener("click", () => {
-                const themeKey = dot.getAttribute("data-theme");
-                if (themeKey) {
-                    applyTheme(themeKey);
-                }
-            });
-        });
     }
 
-    /* --------------------------------------------------------------------------
-       10. Fetch User Assistant Data from Backend API
-       -------------------------------------------------------------------------- */
     async function loadAssistantConfig() {
         if (!userId) {
             console.warn("[Vocentra] No user ID specified. Using default configuration.");
@@ -525,11 +525,19 @@
         }
 
         try {
-            const endpoint = `${baseUrl}/api/user/assistant/${userId}`;
-            const response = await fetch(endpoint, {
+            const endpoint = `${baseUrl}/api/assistant/${userId}`;
+            let response = await fetch(endpoint, {
                 method: "GET",
                 headers: { "Content-Type": "application/json" }
             });
+
+            if (!response.ok) {
+                // Fallback to /api/user/assistant route
+                response = await fetch(`${baseUrl}/api/user/assistant/${userId}`, {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
 
             if (response.ok) {
                 const result = await response.json();
@@ -550,9 +558,6 @@
         }
     }
 
-    /* --------------------------------------------------------------------------
-       11. Initialize on DOM Ready
-       -------------------------------------------------------------------------- */
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () => {
             createWidgetDOM();
@@ -563,3 +568,7 @@
         loadAssistantConfig();
     }
 })();
+
+const applyConfig = () =>{
+    
+}

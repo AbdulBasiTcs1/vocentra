@@ -1,7 +1,13 @@
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+const CANDIDATE_ENDPOINTS = [
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+];
 
 /**
- * Calls the Gemini API and returns the generated text.
+ * Calls the Gemini API with automatic model fallback and returns the generated text.
  *
  * @param {string}   prompt              - The current user message.
  * @param {string}   apiKey              - The user's Gemini API key.
@@ -24,7 +30,7 @@ export const generateGeminiResponse = async (
     // Build contents array from conversation history + current message
     const contents = [];
     if (Array.isArray(conversationHistory)) {
-        for (const turn of conversationHistory.slice(-6)) {
+        for (const turn of conversationHistory.slice(-8)) {
             if (turn.role && turn.text) {
                 contents.push({
                     role: turn.role === "assistant" ? "model" : "user",
@@ -39,7 +45,7 @@ export const generateGeminiResponse = async (
         contents,
         generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 250,
+            maxOutputTokens: 400,
         },
     };
 
@@ -49,49 +55,59 @@ export const generateGeminiResponse = async (
         };
     }
 
-    let response;
-    try {
-        response = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-        });
-    } catch (networkError) {
-        console.error("[Gemini] Network error:", networkError);
-        user.geminiStatus = "error";
-        await user.save();
-        throw new Error("Gemini API network error");
-    }
+    let lastError = null;
 
-    if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        console.error("[Gemini] API error response:", errBody);
+    // Try candidate endpoints sequentially until one succeeds
+    for (const endpoint of CANDIDATE_ENDPOINTS) {
+        try {
+            const response = await fetch(`${endpoint}?key=${encodeURIComponent(apiKey)}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody),
+            });
 
-        if (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 404) {
-            user.geminiStatus = "invalid";
-            await user.save();
-            throw new Error("Gemini API Key is invalid or model not accessible");
+            if (response.ok) {
+                const data = await response.json();
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    user.geminiStatus = "active";
+                    await user.save();
+                    return text;
+                }
+            }
+
+            const errBody = await response.json().catch(() => ({}));
+            console.warn(`[Gemini] Endpoint ${endpoint} returned status ${response.status}:`, errBody?.error?.message || response.statusText);
+
+            // If 404 (model not found on this endpoint/version), try next model candidate
+            if (response.status === 404) {
+                lastError = new Error(`Model not found on ${endpoint}`);
+                continue;
+            }
+
+            if (response.status === 400 || response.status === 401 || response.status === 403) {
+                user.geminiStatus = "invalid";
+                await user.save();
+                throw new Error("Gemini API Key is invalid or not authorized");
+            }
+
+            if (response.status === 429) {
+                user.geminiStatus = "quota_exceeded";
+                await user.save();
+                throw new Error("Gemini API Key quota exceeded");
+            }
+
+            lastError = new Error(`Gemini API error: ${response.statusText}`);
+        } catch (err) {
+            if (err.message.includes("invalid") || err.message.includes("quota")) {
+                throw err;
+            }
+            lastError = err;
         }
-
-        if (response.status === 429) {
-            user.geminiStatus = "quota_exceeded";
-            await user.save();
-            throw new Error("Gemini API Key quota exceeded");
-        }
-
-        // For all other errors, keep current status — don't write an invalid enum value
-        throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-        // Don't write invalid enum — just throw, status unchanged
-        throw new Error("Gemini returned an empty response");
-    }
-
-    user.geminiStatus = "active";
+    // If all endpoints failed
+    user.geminiStatus = "error";
     await user.save();
-    return text;
+    throw lastError || new Error("Failed to generate response from Gemini API");
 };

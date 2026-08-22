@@ -4,15 +4,16 @@
     }
     window.__VOCENTRA_ASSISTANT_INITIALIZED__ = true;
 
+    // ─── Detect Script & User ID ──────────────────────────────────────────────
     let script = document.currentScript;
     if (!script) {
         script = document.querySelector('script[data-user-id]') ||
-                 document.querySelector('script[src*="assistant.js"]');
+            document.querySelector('script[src*="assistant.js"]');
     }
 
     let userId = script?.dataset?.userId ||
-                 script?.getAttribute("data-user-id") ||
-                 script?.getAttribute("data-userid");
+        script?.getAttribute("data-user-id") ||
+        script?.getAttribute("data-userid");
 
     let baseUrl = "";
     if (script?.src) {
@@ -31,8 +32,8 @@
         baseUrl = window.location.origin;
     }
 
+    // ─── Inject Stylesheet ───────────────────────────────────────────────────
     const cssUrl = `${baseUrl}/assistant.css`;
-
     if (!document.querySelector(`link[href="${cssUrl}"]`)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -40,6 +41,7 @@
         document.head.appendChild(link);
     }
 
+    // ─── Themes Configuration ────────────────────────────────────────────────
     const THEMES = {
         dark: {
             pageBg: "radial-gradient(80% 60% at 50% 0%, #1a1630 0%, #0c0c14 40%, #000000 100%)",
@@ -49,6 +51,8 @@
             text: "#f8fafc",
             sub: "#94a3b8",
             listening: "#2dd4bf",
+            thinking: "#f59e0b",
+            speaking: "#818cf8",
             wave: "#2dd4bf",
             button: "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)",
             micGlow: "rgba(124, 58, 237, 0.5)",
@@ -61,7 +65,9 @@
             cardBorder: "rgba(0,0,0,0.06)",
             text: "#0f172a",
             sub: "#64748b",
-            listening: "#3b82f6",
+            listening: "#0891b2",
+            thinking: "#d97706",
+            speaking: "#4f46e5",
             wave: "#3b82f6",
             button: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
             micGlow: "rgba(59, 130, 246, 0.4)",
@@ -75,6 +81,8 @@
             text: "#f8fafc",
             sub: "#cbd5e1",
             listening: "#a5b4fc",
+            thinking: "#fbbf24",
+            speaking: "#c084fc",
             wave: "#a5b4fc",
             button: "linear-gradient(135deg, #818cf8 0%, #c084fc 100%)",
             micGlow: "rgba(167, 139, 250, 0.5)",
@@ -88,14 +96,14 @@
             text: "#ecfdf5",
             sub: "#6ee7b7",
             listening: "#34d399",
+            thinking: "#fbbf24",
+            speaking: "#a78bfa",
             wave: "#34d399",
             button: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
             micGlow: "rgba(16, 185, 129, 0.6)",
             shadow: "0 32px 64px -12px rgba(0,0,0,0.7), 0 0 24px rgba(16,185,129,0.12), 0 0 0 1px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,0.04)",
         },
     };
-
-
 
     const WAVE_BARS = [0.35, 0.8, 0.55, 0.95, 0.45, 0.75, 0.5, 0.9, 0.4, 0.7, 0.85, 0.5, 0.65, 0.4, 0.8, 0.55, 0.95, 0.45, 0.7, 0.6];
 
@@ -107,6 +115,21 @@
             <line x1="8" y1="22" x2="16" y2="22" />
         </svg>
     `;
+
+    // ─── Assistant State ─────────────────────────────────────────────────────
+    const STATE = {
+        IDLE: "idle",
+        LISTENING: "listening",
+        THINKING: "thinking",
+        SPEAKING: "speaking",
+    };
+
+    const STATE_LABELS = {
+        idle: "Tap mic to speak",
+        listening: "Listening...",
+        thinking: "Thinking...",
+        speaking: "AI Speaking...",
+    };
 
     let assistantData = {
         assistantName: "Vocentra",
@@ -120,11 +143,14 @@
         pages: []
     };
 
-    let isOpen = false;
-    let isListening = false;
+    let currentState = STATE.IDLE;
     let currentTheme = "dark";
+    let isOpen = false;
     let recognition = null;
+    let conversationHistory = [];
+    let currentUtterance = null;
 
+    // ─── DOM Generation ──────────────────────────────────────────────────────
     function createWidgetDOM() {
         const container = document.createElement("div");
         container.id = "vocentra-widget-container";
@@ -140,8 +166,6 @@
                     </svg>
                 </button>
 
-
-
                 <!-- Gradient Orb -->
                 <div class="vocentra-orb-wrap">
                     <div class="vocentra-orb" id="vocentra-orb"></div>
@@ -152,10 +176,10 @@
                 <h2 class="vocentra-title" id="vocentra-title"></h2>
                 <p class="vocentra-sub" id="vocentra-sub"></p>
 
-                <!-- Status line: Listening / Speaking / Thinking -->
+                <!-- Status line: Listening / Thinking / AI Speaking / Tap mic to speak -->
                 <div class="vocentra-listening" id="vocentra-status">Tap mic to speak</div>
 
-                <!-- Spoken transcript: only what the user said -->
+                <!-- Spoken transcript / live response -->
                 <div class="vocentra-transcript" id="vocentra-transcript"></div>
 
                 <!-- Waveform -->
@@ -192,6 +216,84 @@
         setupEventListeners(container);
     }
 
+    // ─── State Management & UI Synchronization ───────────────────────────────
+    function setState(state) {
+        currentState = state;
+
+        const statusEl = document.getElementById("vocentra-status");
+        const transcriptEl = document.getElementById("vocentra-transcript");
+        const micBtn = document.getElementById("vocentra-mic-btn");
+        const waveBars = document.querySelectorAll(".vocentra-wave-bar");
+        const orb = document.getElementById("vocentra-orb");
+        const orbGlow = document.getElementById("vocentra-orb-glow");
+        const t = THEMES[currentTheme] || THEMES.dark;
+
+        // 1. Update status text
+        if (statusEl) {
+            statusEl.textContent = STATE_LABELS[state] || STATE_LABELS.idle;
+        }
+
+        // 2. Update color per state
+        applyStateColors(state);
+
+        // 3. Update waveform active animation & color
+        const isWaveActive = state === STATE.LISTENING || state === STATE.SPEAKING;
+        waveBars.forEach(bar => {
+            bar.classList.toggle("idle", !isWaveActive);
+            bar.style.background = state === STATE.SPEAKING ? t.speaking : t.wave;
+        });
+
+        // 4. Update Orb animations / classes
+        if (orb) {
+            orb.classList.remove("orb--listening", "orb--thinking", "orb--speaking");
+            if (state !== STATE.IDLE) {
+                orb.classList.add(`orb--${state}`);
+            }
+        }
+        if (orbGlow) {
+            orbGlow.classList.remove("orb--listening", "orb--thinking", "orb--speaking");
+            if (state !== STATE.IDLE) {
+                orbGlow.classList.add(`orb--${state}`);
+            }
+        }
+
+        // 5. Mic button interactive states & lock
+        if (micBtn) {
+            const isLocked = state === STATE.THINKING || state === STATE.SPEAKING;
+            micBtn.disabled = isLocked;
+            micBtn.style.opacity = isLocked ? "0.6" : "1";
+            micBtn.style.cursor = isLocked ? "not-allowed" : "pointer";
+
+            if (state === STATE.LISTENING) {
+                micBtn.style.boxShadow = `0 0 0 4px ${t.listening}66, 0 10px 28px rgba(0, 0, 0, 0.3)`;
+                micBtn.style.transform = "scale(1.05)";
+            } else {
+                micBtn.style.boxShadow = "0 10px 28px rgba(0, 0, 0, 0.3)";
+                micBtn.style.transform = "scale(1)";
+            }
+        }
+
+        // 6. Transcript visibility
+        if (transcriptEl) {
+            transcriptEl.style.opacity = state === STATE.IDLE ? "0" : "0.9";
+        }
+    }
+
+    function applyStateColors(state) {
+        const statusEl = document.getElementById("vocentra-status");
+        const t = THEMES[currentTheme] || THEMES.dark;
+        if (!statusEl) return;
+
+        const colorMap = {
+            [STATE.IDLE]: t.sub,
+            [STATE.LISTENING]: t.listening,
+            [STATE.THINKING]: t.thinking,
+            [STATE.SPEAKING]: t.speaking,
+        };
+        statusEl.style.color = colorMap[state] || t.sub;
+    }
+
+    // ─── Theme Application ────────────────────────────────────────────────────
     function applyTheme(themeKey) {
         currentTheme = themeKey;
         const t = THEMES[themeKey] || THEMES.dark;
@@ -215,15 +317,12 @@
 
         const title = document.getElementById("vocentra-title");
         const sub = document.getElementById("vocentra-sub");
-        const status = document.getElementById("vocentra-status");
         const transcript = document.getElementById("vocentra-transcript");
         if (title) title.style.color = t.text;
         if (sub) sub.style.color = t.sub;
-        if (status) status.style.color = t.listening;
         if (transcript) transcript.style.color = themeKey === "light" ? "#0f172a" : "#ffffff";
 
-        const waveBars = popup.querySelectorAll(".vocentra-wave-bar");
-        waveBars.forEach(bar => {
+        popup.querySelectorAll(".vocentra-wave-bar").forEach(bar => {
             bar.style.background = t.wave;
         });
 
@@ -237,7 +336,7 @@
         if (launcherBtn) launcherBtn.style.background = t.button;
         if (launcherGlow) launcherGlow.style.background = t.micGlow;
 
-
+        applyStateColors(currentState);
     }
 
     function updateAssistantUI() {
@@ -269,6 +368,11 @@
         }
     }
 
+    // ─── Speech Recognition (STT) ─────────────────────────────────────────────
+    let accumulatedTranscript = "";
+    let silenceTimer = null;
+    const SILENCE_TIMEOUT_MS = 1400; // Allow natural pauses up to 1.4s before finalizing query
+
     function initSpeechRecognition() {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRec) {
@@ -276,63 +380,87 @@
         }
 
         const sr = new SpeechRec();
-        sr.continuous = false;
+        sr.continuous = true; // Stay listening across mid-sentence pauses
         sr.interimResults = true;
         sr.lang = "en-US";
 
         sr.onstart = () => {
-            isListening = true;
-            updateVoiceState("Listening...", true);
+            accumulatedTranscript = "";
+            setState(STATE.LISTENING);
         };
 
         sr.onresult = (event) => {
-            let transcript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                transcript += event.results[i][0].transcript;
+            let sessionFinal = "";
+            let interim = "";
+
+            for (let i = 0; i < event.results.length; ++i) {
+                const text = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    sessionFinal += text + " ";
+                } else {
+                    interim += text;
+                }
             }
 
-            // Show ONLY the spoken text in the transcript area
+            accumulatedTranscript = (sessionFinal + interim).trim();
+
             const transcriptEl = document.getElementById("vocentra-transcript");
-            if (transcriptEl) {
-                transcriptEl.textContent = transcript;
+            if (transcriptEl && accumulatedTranscript) {
+                transcriptEl.textContent = `You: ${accumulatedTranscript}`;
             }
 
-            if (event.results[0].isFinal) {
-                handleUserQuery(transcript);
+            // Reset silence timer on every spoken word / phrase
+            if (silenceTimer) clearTimeout(silenceTimer);
+            if (accumulatedTranscript) {
+                silenceTimer = setTimeout(() => {
+                    commitSpeechQuery();
+                }, SILENCE_TIMEOUT_MS);
             }
         };
 
         sr.onerror = (e) => {
-            console.warn("[Vocentra] Speech recognition error:", e);
-            isListening = false;
-            updateVoiceState("Listening...", false);
+            console.warn("[Vocentra] Speech recognition error:", e.error);
+            if (silenceTimer) clearTimeout(silenceTimer);
+            if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+                const transcriptEl = document.getElementById("vocentra-transcript");
+                if (transcriptEl) transcriptEl.textContent = "Microphone access denied.";
+            }
+            if (currentState === STATE.LISTENING) {
+                setState(STATE.IDLE);
+            }
         };
 
         sr.onend = () => {
-            isListening = false;
-            updateVoiceState("Listening...", false);
+            if (silenceTimer) clearTimeout(silenceTimer);
+            if (currentState === STATE.LISTENING) {
+                if (accumulatedTranscript.trim()) {
+                    commitSpeechQuery();
+                } else {
+                    setState(STATE.IDLE);
+                }
+            }
         };
 
         return sr;
     }
 
-    function updateVoiceState(statusText, active) {
-        const status = document.getElementById("vocentra-status");
-        const waveBars = document.querySelectorAll(".vocentra-wave-bar");
-        const t = THEMES[currentTheme] || THEMES.dark;
+    function commitSpeechQuery() {
+        if (silenceTimer) {
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+        }
+        const query = accumulatedTranscript.trim();
+        accumulatedTranscript = "";
 
-        if (status) {
-            status.textContent = statusText;
-            status.style.color = t.listening;
+        if (recognition) {
+            try { recognition.stop(); } catch (e) { }
         }
 
-        waveBars.forEach(bar => {
-            if (active) {
-                bar.classList.remove("idle");
-            } else {
-                bar.classList.add("idle");
-            }
-        });
+        if (query) {
+            handleUserQuery(query);
+        } else {
+            setState(STATE.IDLE);
+        }
     }
 
     function toggleListening() {
@@ -345,21 +473,30 @@
             return;
         }
 
-        if (isListening) {
-            try { recognition.stop(); } catch (e) {}
-            isListening = false;
-            updateVoiceState("Listening...", false);
-        } else {
+        if (currentState === STATE.LISTENING) {
+            // If user taps while listening, commit what was said so far immediately (or cancel if empty)
+            if (accumulatedTranscript.trim()) {
+                commitSpeechQuery();
+            } else {
+                try { recognition.stop(); } catch (e) { }
+                setState(STATE.IDLE);
+                const transcriptEl = document.getElementById("vocentra-transcript");
+                if (transcriptEl) transcriptEl.textContent = "";
+            }
+        } else if (currentState === STATE.IDLE) {
+            accumulatedTranscript = "";
             try {
                 recognition.start();
             } catch (e) {
                 console.warn("[Vocentra] Recognition start failed:", e);
+                setState(STATE.IDLE);
             }
         }
+        // If thinking or speaking, user clicks are ignored because button is disabled
     }
 
-    let conversationHistory = [];
-    let currentUtterance = null;
+    // ─── Speech Synthesis (TTS) ───────────────────────────────────────────────
+    let speechKeepAliveInterval = null;
 
     function speakResponse(text, onComplete) {
         if (!("speechSynthesis" in window) || !assistantData.voiceEnabled) {
@@ -369,13 +506,27 @@
 
         try {
             window.speechSynthesis.cancel();
+            if (speechKeepAliveInterval) {
+                clearInterval(speechKeepAliveInterval);
+                speechKeepAliveInterval = null;
+            }
             window.speechSynthesis.resume();
-        } catch (e) {}
+        } catch (e) { }
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        currentUtterance = utterance; // Prevent garbage collection in Chrome
+        // Strip any residual bracket tags like [NAVIGATE: /path] just in case
+        const cleanText = text.replace(/\[NAVIGATE:\s*[^\]]+\]/gi, "").trim();
+        if (!cleanText) {
+            if (onComplete) onComplete();
+            return;
+        }
 
-        // Customize voice cadence based on assistant tone
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        currentUtterance = utterance; // Prevent garbage collection in browser
+
+        utterance.lang = "en-US";
+        utterance.volume = 1;
+
+        // Tone adjustments
         if (assistantData.tone === "professional") {
             utterance.rate = 1.0;
             utterance.pitch = 0.95;
@@ -388,35 +539,69 @@
         }
 
         let completed = false;
+        let safetyTimer = null;
+
         function finish() {
             if (completed) return;
             completed = true;
-            updateVoiceState("Listening...", false);
+            if (safetyTimer) {
+                clearTimeout(safetyTimer);
+                safetyTimer = null;
+            }
+            if (speechKeepAliveInterval) {
+                clearInterval(speechKeepAliveInterval);
+                speechKeepAliveInterval = null;
+            }
             if (onComplete) onComplete();
         }
 
         utterance.onstart = () => {
-            updateVoiceState("Speaking...", true);
-        };
-        utterance.onend = finish;
-        utterance.onerror = finish;
+            setState(STATE.SPEAKING);
 
-        // Safety timeout in case browser speech engine hangs
-        const estimatedDurationMs = Math.max(2000, (text.length / 15) * 1000);
-        setTimeout(finish, estimatedDurationMs + 1500);
+            // Chrome speech synthesis keep-alive for longer sentences
+            if (speechKeepAliveInterval) clearInterval(speechKeepAliveInterval);
+            speechKeepAliveInterval = setInterval(() => {
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.pause();
+                    window.speechSynthesis.resume();
+                } else {
+                    clearInterval(speechKeepAliveInterval);
+                    speechKeepAliveInterval = null;
+                }
+            }, 10000);
+        };
+
+        utterance.onend = finish;
+        utterance.onerror = (err) => {
+            console.warn("[Vocentra] Speech synthesis error:", err);
+            finish();
+        };
+
+        // Generous watchdog timeout (only triggers if browser audio completely hangs)
+        const watchdogMs = Math.max(15000, (cleanText.length / 4) * 1000 + 10000);
+        safetyTimer = setTimeout(() => {
+            if (!completed) {
+                console.warn("[Vocentra] Speech synthesis watchdog triggered");
+                finish();
+            }
+        }, watchdogMs);
 
         window.speechSynthesis.speak(utterance);
     }
 
+    // ─── Process User Query ──────────────────────────────────────────────────
     async function handleUserQuery(text) {
         const query = text.trim();
         if (!query) return;
 
-        // Show the user's spoken words in transcript immediately
-        const transcriptEl = document.getElementById("vocentra-transcript");
-        if (transcriptEl) transcriptEl.textContent = query;
+        // Stop recognition
+        try { if (recognition) recognition.stop(); } catch (e) { }
 
-        updateVoiceState("Thinking...", true);
+        // Show prompt and enter Thinking state
+        const transcriptEl = document.getElementById("vocentra-transcript");
+        if (transcriptEl) transcriptEl.textContent = `You: ${query}`;
+
+        setState(STATE.THINKING);
         conversationHistory.push({ role: "user", text: query });
 
         let reply = "";
@@ -450,73 +635,86 @@
 
             if (response.ok) {
                 const data = await response.json();
-                reply = data.reply || "";
+                reply = data.reply || data.aiResponse || data.message || "";
                 navigateTo = data.navigateTo || null;
             }
         } catch (error) {
             console.error("[Vocentra] Chat API error:", error);
         }
 
-        // Fallback response if offline or backend error
+        // Fallback response if server error or offline
         if (!reply) {
             reply = `I am ${assistantData.assistantName} for ${assistantData.businessName || "our website"}. How can I assist you today?`;
         }
 
         conversationHistory.push({ role: "assistant", text: reply });
 
+        // Show assistant preview text
+        if (transcriptEl) {
+            transcriptEl.textContent = `${assistantData.assistantName || "AI"}: ${reply}`;
+        }
+
         speakResponse(reply, () => {
-            // Clear transcript after speaking, reset status
+            // After speaking finishes:
             if (transcriptEl) transcriptEl.textContent = "";
-            updateVoiceState("Tap mic to speak", false);
+            setState(STATE.IDLE);
 
             if (navigateTo && assistantData.navigationEnabled) {
                 console.log("[Vocentra] Navigating to:", navigateTo);
                 setTimeout(() => {
-                    if (navigateTo.startsWith("http://") || navigateTo.startsWith("https://")) {
-                        window.location.href = navigateTo;
-                    } else {
-                        window.location.href = navigateTo;
-                    }
-                }, 400);
+                    window.location.href = navigateTo;
+                }, 500);
             }
         });
     }
 
+    // ─── Setup Event Handlers ────────────────────────────────────────────────
     function setupEventListeners(container) {
         const launcherBtn = container.querySelector("#vocentra-launcher-btn");
         const closeBtn = container.querySelector("#vocentra-close-btn");
         const micBtn = container.querySelector("#vocentra-mic-btn");
 
+        function openPopup() {
+            isOpen = true;
+            container.classList.add("vocentra-widget-open");
+            setState(STATE.IDLE);
+        }
+
+        function closePopup() {
+            isOpen = false;
+            container.classList.remove("vocentra-widget-open");
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+            if (recognition) {
+                try { recognition.stop(); } catch (e) { }
+            }
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+            setState(STATE.IDLE);
+            const transcriptEl = document.getElementById("vocentra-transcript");
+            if (transcriptEl) transcriptEl.textContent = "";
+        }
+
         function togglePopup() {
-            isOpen = !isOpen;
             if (isOpen) {
-                container.classList.add("vocentra-widget-open");
-                if (assistantData.voiceEnabled && !isListening) {
-                    const name = assistantData.assistantName || "Vocentra";
-                    const business = assistantData.businessName || "our website";
-                    speakResponse(`Hello! I'm ${name}, the voice assistant for ${business}. How can I help you?`);
-                }
+                closePopup();
             } else {
-                container.classList.remove("vocentra-widget-open");
-                if (isListening && recognition) {
-                    try { recognition.stop(); } catch (e) {}
-                }
-                if ("speechSynthesis" in window) {
-                    window.speechSynthesis.cancel();
-                }
+                openPopup();
             }
         }
 
         launcherBtn.addEventListener("click", togglePopup);
         if (closeBtn) {
-            closeBtn.addEventListener("click", togglePopup);
+            closeBtn.addEventListener("click", closePopup);
         }
 
-        micBtn.addEventListener("click", () => {
-            toggleListening();
-        });
+        micBtn.addEventListener("click", toggleListening);
     }
 
+    // ─── Load Assistant Config ───────────────────────────────────────────────
     async function loadAssistantConfig() {
         if (!userId) {
             console.warn("[Vocentra] No user ID specified. Using default configuration.");
@@ -532,7 +730,6 @@
             });
 
             if (!response.ok) {
-                // Fallback to /api/user/assistant route
                 response = await fetch(`${baseUrl}/api/user/assistant/${userId}`, {
                     method: "GET",
                     headers: { "Content-Type": "application/json" }
@@ -558,6 +755,7 @@
         }
     }
 
+    // ─── Bootstrap ────────────────────────────────────────────────────────────
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () => {
             createWidgetDOM();
@@ -568,7 +766,3 @@
         loadAssistantConfig();
     }
 })();
-
-const applyConfig = () =>{
-    
-}

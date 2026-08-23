@@ -62,12 +62,17 @@ app.use(cors({
 }));
 
 // Serve static assets (assistant.js, assistant.css, logo.png, etc.) with open CORS for widget embeds
+const serverPublicPath = path.join(__dirname, "public");
 const clientPublicPath = path.join(__dirname, "../client/public");
-app.use(express.static(clientPublicPath, {
+
+const staticOptions = {
     setHeaders: (res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
     }
-}));
+};
+
+app.use(express.static(serverPublicPath, staticOptions));
+app.use(express.static(clientPublicPath, staticOptions));
 
 app.use(express.json());
 app.use(cookieParser());

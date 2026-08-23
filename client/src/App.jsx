@@ -64,13 +64,19 @@ function App() {
 
     useEffect(() => {
         const checkUser = async () => {
+            const token = localStorage.getItem("vocentra_token");
+            if (!token) {
+                setUser(null);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await axios.get(`${serverUrl}/api/user/current-user`, {
                     withCredentials: true,
                 });
                 setUser(response.data);
             } catch (error) {
-                console.error("Error in checkUser:", error);
                 localStorage.removeItem("vocentra_token");
                 setUser(null);
             } finally {

@@ -11,6 +11,19 @@ import ProtectedRoute from "./components/protectedRoute";
 
 export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
 
+// Automatically attach Bearer token from localStorage for cross-domain requests
+axios.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem("vocentra_token");
+        if (token) {
+            config.headers = config.headers || {};
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
 function AppRoutes({ user, setUser, loading }) {
     const location = useLocation();
 
@@ -72,6 +85,7 @@ function App() {
                 setUser(response.data);
             } catch (error) {
                 console.error("Error in checkUser:", error);
+                localStorage.removeItem("vocentra_token");
                 setUser(null);
             } finally {
                 setLoading(false);

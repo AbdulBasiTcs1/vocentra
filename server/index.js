@@ -18,6 +18,9 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
+// Trust proxy for secure cookies over reverse proxies (Railway, Render, Vercel)
+app.set("trust proxy", 1);
+
 app.use((req, res, next) => {
     if (
         req.path.startsWith("/assistant") ||
@@ -38,8 +41,24 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin: CLIENT_URL,
-    credentials: true
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (
+            origin === CLIENT_URL ||
+            origin.includes("localhost") ||
+            origin.includes("127.0.0.1") ||
+            origin.endsWith(".vercel.app") ||
+            origin.endsWith(".netlify.app") ||
+            origin.endsWith(".railway.app")
+        ) {
+            return callback(null, true);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
 }));
 
 // Serve static assets (assistant.js, assistant.css, logo.png, etc.) with open CORS for widget embeds

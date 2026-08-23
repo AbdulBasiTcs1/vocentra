@@ -218,6 +218,9 @@ export default function Login({ setUser }) {
             const email = user.email;
             const res = await axios.post(`${serverUrl}/api/auth/google`, { name, email, idToken }, { withCredentials: true });
             if (res.status === 200) {
+                if (res.data.token) {
+                    localStorage.setItem("vocentra_token", res.data.token);
+                }
                 if (setUser) setUser(res.data.user || res.data);
                 setSuccess(true);
                 setTimeout(() => navigate("/"), 1500);

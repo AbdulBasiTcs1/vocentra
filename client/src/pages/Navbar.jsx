@@ -113,6 +113,7 @@ export default function Navbar({ user, setUser, activeTab: propActiveTab, onTabC
         } catch (err) {
             console.error("Error during logout API call:", err);
         } finally {
+            localStorage.removeItem("vocentra_token");
             if (setUser) setUser(null);
             if (onLogout) onLogout();
         }

@@ -6,21 +6,48 @@ import { genToken } from "../configs/token.js";
 
 export const googleAuth = async (req, res) => {
     try {
-        const { name, email } = req.body;
+        const { name, email, idToken } = req.body;
 
-        if (!name || !email) {
+        if (!email) {
             return res.status(400).json({
                 success: false,
-                message: "Name and email are required"
+                message: "Email is required"
             });
         }
 
         const normalizedEmail = email.trim().toLowerCase();
+
+        // Cryptographic token validation with Google OAuth2
+        if (idToken) {
+            try {
+                const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+                if (!verifyRes.ok) {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Invalid or expired Google authentication token"
+                    });
+                }
+                const tokenData = await verifyRes.json();
+                if (tokenData.email && tokenData.email.toLowerCase() !== normalizedEmail) {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Email does not match authentication token"
+                    });
+                }
+            } catch (tokenErr) {
+                console.error("Token verification check error:", tokenErr);
+                return res.status(401).json({
+                    success: false,
+                    message: "Failed to verify authentication token"
+                });
+            }
+        }
+
         let user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
             user = await User.create({
-                name: name.trim(),
+                name: (name || normalizedEmail.split("@")[0]).trim(),
                 email: normalizedEmail
             });
         }

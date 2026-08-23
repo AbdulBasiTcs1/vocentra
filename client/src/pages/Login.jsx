@@ -213,9 +213,10 @@ export default function Login({ setUser }) {
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
+            const idToken = await user.getIdToken();
             const name = user.displayName || user.email;
             const email = user.email;
-            const res = await axios.post(`${serverUrl}/api/auth/google`, { name, email }, { withCredentials: true });
+            const res = await axios.post(`${serverUrl}/api/auth/google`, { name, email, idToken }, { withCredentials: true });
             if (res.status === 200) {
                 if (setUser) setUser(res.data.user || res.data);
                 setSuccess(true);

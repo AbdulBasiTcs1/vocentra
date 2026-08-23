@@ -1,9 +1,10 @@
-import express from "express"
-import { googleAuth, logOut } from "../controllers/auth.controller.js"
+import express from "express";
+import { googleAuth, logOut } from "../controllers/auth.controller.js";
+import { authRateLimiter } from "../middleware/rateLimiter.js";
 
-const router = express.Router()
+const router = express.Router();
 
-router.post("/google", googleAuth)
-router.get("/logout", logOut)
+router.post("/google", authRateLimiter, googleAuth);
+router.get("/logout", logOut);
 
-export default router
+export default router;

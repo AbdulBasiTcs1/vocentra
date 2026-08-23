@@ -9,7 +9,7 @@ import Billing from "./pages/Billing";
 import Navbar from "./pages/Navbar";
 import ProtectedRoute from "./components/protectedRoute";
 
-export const serverUrl = "http://localhost:8000";
+export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
 
 function AppRoutes({ user, setUser, loading }) {
     const location = useLocation();
@@ -48,6 +48,20 @@ function AppRoutes({ user, setUser, loading }) {
 function App() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Dynamically mount Vocentra's own assistant script on the website
+        const assistantUserId = "6a77fc97739b676b31c91e6c";
+        const scriptId = "vocentra-website-assistant";
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement("script");
+            script.id = scriptId;
+            script.src = `${serverUrl}/assistant.js`;
+            script.setAttribute("data-user-id", assistantUserId);
+            script.async = true;
+            document.body.appendChild(script);
+        }
+    }, []);
 
     useEffect(() => {
         const checkUser = async () => {

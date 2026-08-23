@@ -63,20 +63,6 @@ function App() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Dynamically mount Vocentra's own assistant script on the website
-        const assistantUserId = import.meta.env.VITE_WEBSITE_ASSISTANT_ID || "6a80a6ca7ce1eba8dcc2603e";
-        const scriptId = "vocentra-website-assistant";
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement("script");
-            script.id = scriptId;
-            script.src = `${serverUrl}/assistant.js`;
-            script.setAttribute("data-user-id", assistantUserId);
-            script.async = true;
-            document.body.appendChild(script);
-        }
-    }, []);
-
-    useEffect(() => {
         const checkUser = async () => {
             try {
                 const response = await axios.get(`${serverUrl}/api/user/current-user`, {

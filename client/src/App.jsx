@@ -64,7 +64,7 @@ function App() {
 
     useEffect(() => {
         // Dynamically mount Vocentra's own assistant script on the website
-        const assistantUserId = "6a77fc97739b676b31c91e6c";
+        const assistantUserId = import.meta.env.VITE_WEBSITE_ASSISTANT_ID || "6a80a6ca7ce1eba8dcc2603e";
         const scriptId = "vocentra-website-assistant";
         if (!document.getElementById(scriptId)) {
             const script = document.createElement("script");

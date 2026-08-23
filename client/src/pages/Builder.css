@@ -480,7 +480,7 @@
 
 .builder-btn-save:disabled {
     opacity: 0.5;
-    cursor: default;
+    cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }

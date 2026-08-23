@@ -726,7 +726,12 @@ export default function Builder({ user, setUser }) {
                                     type="button"
                                     className="builder-btn-save"
                                     onClick={handleSave}
-                                    disabled={isSaving}
+                                    disabled={isSaving || !assistantName ||
+                                        !businessName ||
+                                        !businessType ||
+                                        !businessDescription ||
+                                        !targetAudience ||
+                                        !geminiApiKey}
                                 >
                                     {isSaving
                                         ? setupComplete ? "Updating…" : "Saving…"

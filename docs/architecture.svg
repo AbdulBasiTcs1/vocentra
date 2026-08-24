@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="100%" height="100%" style="background:#090b10; font-family:'Inter',system-ui,-apple-system,sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0d14"/>
+      <stop offset="50%" stop-color="#0e121e"/>
+      <stop offset="100%" stop-color="#07090d"/>
+    </linearGradient>
+
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="glowPurple" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="680" fill="url(#bgGrad)"/>
+
+  <!-- Grid Dots Background -->
+  <g opacity="0.15">
+    <pattern id="dotGrid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#94a3b8"/>
+    </pattern>
+    <rect width="1200" height="680" fill="url(#dotGrid)"/>
+  </g>
+
+  <!-- Main Title Header -->
+  <g transform="translate(60, 48)">
+    <text x="0" y="0" font-size="24" font-weight="800" fill="#f8fafc" letter-spacing="-0.5">
+      🎙️ VOCENTRA <tspan fill="#8b5cf6">SYSTEM ARCHITECTURE</tspan>
+    </text>
+    <text x="0" y="24" font-size="13" font-weight="400" fill="#94a3b8">
+      End-to-End Conversational Voice AI Pipeline, Embedding Engine &amp; Studio Orchestration
+    </text>
+  </g>
+
+  <!-- ==================== SECTION 1: TARGET EMBED WEBSITE ==================== -->
+  <g transform="translate(60, 110)">
+    <!-- Container Box -->
+    <rect width="320" height="510" rx="16" fill="#111625" stroke="rgba(59, 130, 246, 0.25)" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="320" height="42" rx="16" fill="rgba(59, 130, 246, 0.08)"/>
+    <text x="20" y="27" font-size="13" font-weight="700" fill="#60a5fa" letter-spacing="0.5">1. TARGET WEBSITE (CLIENT-SIDE)</text>
+
+    <!-- Sub-card: Visitor Input -->
+    <g transform="translate(20, 60)">
+      <rect width="280" height="85" rx="10" fill="#182035" stroke="rgba(255, 255, 255, 0.07)" stroke-width="1"/>
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#f8fafc">👤 Website Visitor Speech / Voice</text>
+      <text x="16" y="46" font-size="11" fill="#94a3b8">Web Speech API (SpeechRecognition STT)</text>
+      <text x="16" y="66" font-size="10" font-family="monospace" fill="#38bdf8">"Take me to pricing page" ➔ Text</text>
+    </g>
+
+    <!-- Sub-card: assistant.js Widget -->
+    <g transform="translate(20, 165)">
+      <rect width="280" height="110" rx="10" fill="#1a1f38" stroke="rgba(139, 92, 246, 0.4)" stroke-width="1.5"/>
+      <circle cx="25" cy="28" r="10" fill="url(#purpleGrad)"/>
+      <text x="44" y="32" font-size="13" font-weight="700" fill="#f8fafc">assistant.js &amp; assistant.css</text>
+      <text x="16" y="60" font-size="11" fill="#cbd5e1">• Floating Orb UI + Real-time Waveform</text>
+      <text x="16" y="80" font-size="11" fill="#cbd5e1">• Theme Engine: Dark / Neon / Glass / Light</text>
+      <text x="16" y="100" font-size="10" font-family="monospace" fill="#a78bfa">data-user-id="6a80a6..."</text>
+    </g>
+
+    <!-- Sub-card: Real-Time Execution Feedback -->
+    <g transform="translate(20, 295)">
+      <rect width="280" height="185" rx="10" fill="#151b2d" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1"/>
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#34d399">🔊 Real-Time Client Feedback</text>
+      
+      <rect x="14" y="40" width="252" height="58" rx="6" fill="#0c1220" stroke="rgba(255,255,255,0.05)"/>
+      <text x="22" y="58" font-size="11" font-weight="600" fill="#f8fafc">1. Speech Synthesis (TTS)</text>
+      <text x="22" y="78" font-size="10" fill="#94a3b8">window.speechSynthesis.speak(audio)</text>
+
+      <rect x="14" y="110" width="252" height="58" rx="6" fill="#0c1220" stroke="rgba(255,255,255,0.05)"/>
+      <text x="22" y="128" font-size="11" font-weight="600" fill="#f8fafc">2. Auto-Navigation Trigger</text>
+      <text x="22" y="148" font-size="10" font-family="monospace" fill="#2dd4bf">window.location.href = "/pricing"</text>
+    </g>
+  </g>
+
+  <!-- Arrow: Target Website -> Express Gateway -->
+  <g transform="translate(380, 225)">
+    <path d="M 0 0 L 50 0" stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <polygon points="50,-5 60,0 50,5" fill="#60a5fa"/>
+    <text x="5" y="-10" font-size="10" font-family="monospace" fill="#93c5fd">POST /chat</text>
+  </g>
+
+  <!-- ==================== SECTION 2: VOCENTRA CLOUD ENGINE ==================== -->
+  <g transform="translate(440, 110)">
+    <!-- Container Box -->
+    <rect width="360" height="510" rx="16" fill="#111625" stroke="rgba(139, 92, 246, 0.3)" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="360" height="42" rx="16" fill="rgba(139, 92, 246, 0.1)"/>
+    <text x="20" y="27" font-size="13" font-weight="700" fill="#c084fc" letter-spacing="0.5">2. VOCENTRA CLOUD API GATEWAY</text>
+
+    <!-- Sub-card: Security & Middleware Layer -->
+    <g transform="translate(20, 60)">
+      <rect width="320" height="95" rx="10" fill="#191a32" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
+      <text x="16" y="24" font-size="12" font-weight="700" fill="#f8fafc">🛡️ Middleware &amp; Security Layer</text>
+      <text x="16" y="44" font-size="11" fill="#cbd5e1">• Rate Limiter: 40 req/min (DDoS Shield)</text>
+      <text x="16" y="62" font-size="11" fill="#cbd5e1">• Dual-Auth: Bearer Token + SameSite Cookies</text>
+      <text x="16" y="80" font-size="11" fill="#cbd5e1">• CORS &amp; Trust Proxy: Railway / Render SSL</text>
+    </g>
+
+    <!-- Sub-card: Intent & Routing Engine -->
+    <g transform="translate(20, 170)">
+      <rect width="320" height="135" rx="10" fill="#1b1c36" stroke="rgba(236, 72, 153, 0.35)" stroke-width="1"/>
+      <text x="16" y="24" font-size="12" font-weight="700" fill="#f472b6">⚡ Intent Extraction &amp; Prompt Assembly</text>
+      <text x="16" y="46" font-size="11" fill="#cbd5e1">• Injects Tenant Personality, Name &amp; Tone</text>
+      <text x="16" y="66" font-size="11" fill="#cbd5e1">• Compiles Registered Pages &amp; Target Routes</text>
+      <text x="16" y="86" font-size="11" fill="#cbd5e1">• Enforces Directive: <tspan font-family="monospace" fill="#fbcfe8">[NAVIGATE: /path]</tspan></text>
+      <text x="16" y="112" font-size="10" font-family="monospace" fill="#a78bfa">POST /api/user/chat ➔ Sanitized Payload</text>
+    </g>
+
+    <!-- Sub-card: AI Model Connection -->
+    <g transform="translate(20, 320)">
+      <rect width="320" height="160" rx="10" fill="#171e33" stroke="rgba(56, 189, 248, 0.3)" stroke-width="1"/>
+      <text x="16" y="24" font-size="12" font-weight="700" fill="#38bdf8">🧠 Google Gemini Flash AI Engine</text>
+      
+      <rect x="14" y="38" width="292" height="48" rx="6" fill="#0e1322" stroke="rgba(255,255,255,0.05)"/>
+      <text x="22" y="56" font-size="11" font-weight="600" fill="#f8fafc">Grounded Response Generation</text>
+      <text x="22" y="74" font-size="10" fill="#94a3b8">BYOK API Key or Vocentra Cloud Fallback</text>
+
+      <rect x="14" y="96" width="292" height="48" rx="6" fill="#0e1322" stroke="rgba(255,255,255,0.05)"/>
+      <text x="22" y="114" font-size="11" font-weight="600" fill="#f8fafc">Structured Response Formatting</text>
+      <text x="22" y="132" font-size="10" font-family="monospace" fill="#34d399">{ replyText, navigateTo: "/pricing" }</text>
+    </g>
+  </g>
+
+  <!-- Arrow: Express Gateway -> Data/Studio -->
+  <g transform="translate(800, 225)">
+    <path d="M 0 0 L 50 0" stroke="#c084fc" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <polygon points="50,-5 60,0 50,5" fill="#c084fc"/>
+    <text x="5" y="-10" font-size="10" font-family="monospace" fill="#e9d5ff">Mongoose</text>
+  </g>
+
+  <!-- ==================== SECTION 3: STORAGE & STUDIO MANAGEMENT ==================== -->
+  <g transform="translate(860, 110)">
+    <!-- Container Box -->
+    <rect width="280" height="510" rx="16" fill="#111625" stroke="rgba(16, 185, 129, 0.25)" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <rect width="280" height="42" rx="16" fill="rgba(16, 185, 129, 0.08)"/>
+    <text x="20" y="27" font-size="13" font-weight="700" fill="#34d399" letter-spacing="0.5">3. DATA &amp; STUDIO STUDIO</text>
+
+    <!-- Sub-card: MongoDB Atlas -->
+    <g transform="translate(20, 60)">
+      <rect width="240" height="145" rx="10" fill="#152125" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1"/>
+      <text x="16" y="24" font-size="12" font-weight="700" fill="#6ee7b7">🍃 MongoDB Atlas</text>
+      <text x="16" y="46" font-size="11" fill="#cbd5e1">• Tenant User Schema</text>
+      <text x="16" y="66" font-size="11" fill="#cbd5e1">• Assistant Persona &amp; Tone</text>
+      <text x="16" y="86" font-size="11" fill="#cbd5e1">• Encrypted Gemini BYOK</text>
+      <text x="16" y="106" font-size="11" fill="#cbd5e1">• Registered Routes Array</text>
+      <text x="16" y="126" font-size="10" font-family="monospace" fill="#a7f3d0">User.findById(userId)</text>
+    </g>
+
+    <!-- Sub-card: Builder Studio Dashboard -->
+    <g transform="translate(20, 225)">
+      <rect width="240" height="255" rx="10" fill="#1a1c2d" stroke="rgba(245, 158, 11, 0.3)" stroke-width="1"/>
+      <text x="16" y="24" font-size="12" font-weight="700" fill="#fbbf24">🛠️ Vocentra Studio (React 19)</text>
+      <text x="16" y="48" font-size="11" fill="#cbd5e1">• Google OAuth2 / Firebase</text>
+      <text x="16" y="68" font-size="11" fill="#cbd5e1">• Interactive Studio Form</text>
+      <text x="16" y="88" font-size="11" fill="#cbd5e1">• Real-Time Theme Switcher</text>
+      <text x="16" y="108" font-size="11" fill="#cbd5e1">• 1-Click Embed Snippet</text>
+      <text x="16" y="128" font-size="11" fill="#cbd5e1">• Live Quota &amp; Services Hub</text>
+
+      <rect x="14" y="150" width="212" height="85" rx="6" fill="#0f111d" stroke="rgba(255,255,255,0.06)"/>
+      <text x="22" y="172" font-size="10" font-weight="700" fill="#f8fafc">Single-Line Script Generator:</text>
+      <text x="22" y="194" font-size="9" font-family="monospace" fill="#60a5fa">&lt;script src=".../assistant.js"</text>
+      <text x="22" y="210" font-size="9" font-family="monospace" fill="#a78bfa">  data-user-id="6a80..."&gt;</text>
+      <text x="22" y="226" font-size="9" font-family="monospace" fill="#60a5fa">&lt;/script&gt;</text>
+    </g>
+  </g>
+
+  <!-- Bottom Tech Stack Badges Bar -->
+  <g transform="translate(60, 638)">
+    <text x="0" y="0" font-size="11" font-weight="600" fill="#64748b">CORE TECHNOLOGIES:</text>
+    <text x="135" y="0" font-size="11" fill="#94a3b8">React 19 &nbsp;•&nbsp; Vite 8 &nbsp;•&nbsp; Node.js 20 &nbsp;•&nbsp; Express 5 &nbsp;•&nbsp; MongoDB Atlas &nbsp;•&nbsp; Google Gemini AI &nbsp;•&nbsp; Web Speech API &nbsp;•&nbsp; Tailwind CSS 4</text>
+  </g>
+</svg>

@@ -437,18 +437,32 @@
 
 /* ------------------------------- Responsive ------------------------------- */
 
+/* Tablet / small desktop (≤ 980px) — stack to single column */
 @media (max-width: 980px) {
-  .login-shell {
-    grid-template-columns: 1fr;
-    gap: 48px;
-    padding: 48px 24px 96px;
+  .login-screen {
+    overflow-x: hidden;
   }
 
+  .ambient-glow {
+    width: 360px;
+    height: 360px;
+    top: 18%;
+    left: 50%;
+  }
+
+  .login-shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 40px;
+    padding: 52px 24px 100px;
+  }
+
+  /* Card sits at top on mobile */
   .login-card {
     order: -1;
-    max-width: 420px;
+    width: min(420px, 100%);
+    max-width: 100%;
     margin: 0 auto;
-    width: 100%;
   }
 
   .hero-headline {
@@ -469,33 +483,189 @@
     justify-content: center;
   }
 
+  .hero-cta-text {
+    white-space: normal;
+    text-align: center;
+  }
+
   .waveform {
-    opacity: .25;
-    height: 64px;
+    opacity: 0.22;
+    height: 60px;
   }
 }
 
-@media (max-width: 480px) {
-  .login-word {
-    font-size: 34px;
+/* Large phone (≤ 640px) */
+@media (max-width: 640px) {
+  .login-shell {
+    gap: 32px;
+    padding: 40px 16px 88px;
   }
 
   .hero-headline {
-    font-size: 38px;
-  }
-
-  .hero-typewriter {
-    font-size: 15px;
-  }
-
-  .mic-svg {
-    width: 96px;
-    height: 128px;
+    font-size: 40px;
   }
 
   .login-card {
-    padding: 34px 22px 26px;
-    border-radius: 22px;
+    padding: 36px 20px 28px;
+    border-radius: 24px;
+  }
+
+  .login-word {
+    font-size: 36px;
+  }
+}
+
+/* Standard phone (≤ 480px) */
+@media (max-width: 480px) {
+  .login-shell {
+    gap: 28px;
+    padding: 32px 14px 80px;
+  }
+
+  .login-word {
+    font-size: 32px;
+    margin: 14px 0 4px;
+  }
+
+  .login-caption {
+    font-size: 11px;
+    margin: 0 0 20px;
+  }
+
+  .hero-headline {
+    font-size: 34px;
+    line-height: 1.1;
+  }
+
+  .hero-typewriter {
+    font-size: 14px;
+    min-height: 24px;
+  }
+
+  .hero-copy {
+    font-size: 14.5px;
+  }
+
+  .eyebrow {
+    font-size: 10.5px;
+    padding: 6px 12px;
+  }
+
+  .mic-svg {
+    width: 88px;
+    height: 118px;
+  }
+
+  .mic-shadow {
+    width: 100px;
+    height: 13px;
+  }
+
+  .login-card {
+    padding: 30px 16px 24px;
+    border-radius: 20px;
+  }
+
+  .btn-google,
+  .btn-email {
+    font-size: 14px;
+    padding: 13px 16px;
+  }
+
+  .waveform {
+    height: 50px;
+    gap: 3px;
+  }
+
+  .waveform-bar {
+    width: 2.5px;
+  }
+
+  .hero-cta-text {
+    font-size: 10.5px;
+  }
+}
+
+/* Small phones (≤ 390px) */
+@media (max-width: 390px) {
+  .login-shell {
+    padding: 28px 12px 72px;
+    gap: 24px;
+  }
+
+  .hero-headline {
+    font-size: 30px;
+  }
+
+  .hero-typewriter {
+    font-size: 13px;
+  }
+
+  .login-word {
+    font-size: 28px;
+  }
+
+  .login-card {
+    padding: 26px 14px 20px;
+    border-radius: 18px;
+  }
+
+  .mic-svg {
+    width: 76px;
+    height: 102px;
+  }
+
+  .mic-shadow {
+    width: 86px;
+    height: 11px;
+  }
+
+  .btn-google,
+  .btn-email {
+    font-size: 13.5px;
+    padding: 12px 14px;
+  }
+
+  .login-legal {
+    font-size: 10.5px;
+  }
+
+  .hero-cta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-cta-line {
+    width: 20px;
+  }
+}
+
+/* Very small phones (≤ 320px) */
+@media (max-width: 320px) {
+  .hero-headline {
+    font-size: 26px;
+  }
+
+  .login-word {
+    font-size: 24px;
+  }
+
+  .login-card {
+    padding: 22px 12px 18px;
+  }
+
+  .btn-google,
+  .btn-email {
+    font-size: 13px;
+    padding: 11px 12px;
+  }
+}
+
+/* Disable 3D tilt on touch/pointer-coarse devices (mobile) */
+@media (pointer: coarse) {
+  .login-card {
+    transform: none !important;
+    rotate: none;
   }
 }
 
@@ -520,4 +690,3 @@
 }
 
 /* ok */
-
